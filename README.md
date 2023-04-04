@@ -1,6 +1,7 @@
-# Code Review with ChatGPT
+# Code Review with ChatGPT 3.5 Turbo
 
-This project aims to automate code review using the ChatGPT language model. It integrates  with Github Actions, and upon receiving a Pull Request, it automatically sends each code review to ChatGPT.
+
+.This project aims to automate code review using the ChatGPT language model. It integrates  with Github Actions, and upon receiving a Pull Request, it automatically sends each code review to ChatGPT.
 
 # Setup
 
