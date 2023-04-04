@@ -129,7 +129,7 @@ def files():
         content_pr = file_pr.decoded_content
         
         # Create a diff between the main branch and the PR's last commit
-        unified_diff = list(difflib.unified_diff(content_main.decode().splitlines(), content_pr.decode().splitlines()))
+        unified_diff = list(difflib.unified_diff(content_main.splitlines(), content_pr.splitlines()))
         
         if not unified_diff:
           print(f"No changes found in file: {filename}, skipping.")
