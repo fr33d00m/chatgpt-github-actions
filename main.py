@@ -30,6 +30,16 @@ g = Github(args.github_token)
 def files():
     repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
     pull_request = repo.get_pull(int(args.github_pr_id))
+    
+    last_commit_shas = {}
+    commits = pull_request.get_commits()
+    
+    for commit in commits:
+        # Getting the modified files in the commit
+        files = commit.files
+        for file in files:
+            # Update the last commit SHA for the file
+            last_commit_shas[file.filename] = commit.sha
 
     # Define a file size threshold (in bytes) for sending only the diff
     file_size_threshold = 6000  # Adjust this value as needed
