@@ -190,7 +190,7 @@ def files():
           print(f"Error on GPT: {e}")
           
           
-    if len(gp_responses) == 0:
+    if len(gpt_responses) == 0:
       return
     
     max_len = 8000
@@ -208,7 +208,6 @@ def files():
         )
         print(f"Received response from ChatGPT for executive summary ")
         gpt_response = response.choices[0].message.content
-        gpt_responses.append(gpt_response)
         # Adding a comment to the pull request with ChatGPT's response
         pull_request.create_issue_comment(
           f"Joe Rogan Executive Review: \n\n {gpt_response}")
