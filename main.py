@@ -45,8 +45,14 @@ def find_previous_review_comment(pr_comments, filename, bot_username):
 def files():
     repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
     pull_request = repo.get_pull(int(args.github_pr_id))
-    authenticated_user = g.get_user()
-    bot_username = authenticated_user.login
+    
+    try:
+      authenticated_user = g.get_user()
+      bot_username = authenticated_user.login
+    except Exception as e:
+      print(f"Failed to get authenticated user's username, falling back to 'github-actions'")
+      bot_username = "github-actions"
+
     pr_comments = pull_request.get_issue_comments()
 
     last_commit_shas = {}
