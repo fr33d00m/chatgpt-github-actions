@@ -121,12 +121,12 @@ def files():
         # Getting the file content from the main branch, should parametrize later on.
         try:
             file_main = repo.get_contents(filename, ref="main")
-            content_main = file_main.decoded_content
+            content_main = file_main.decoded_content.decode("utf-8")
         except Exception:
             print(f"File {filename} not found in main branch, assuming it's a new file.")
             content_main = ""
         
-        content_pr = file_pr.decoded_content
+        content_pr = file_pr.decoded_content.decode("utf-8")
         
         # Create a diff between the main branch and the PR's last commit
         unified_diff = list(difflib.unified_diff(content_main.splitlines(), content_pr.splitlines()))
