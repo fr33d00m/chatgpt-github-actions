@@ -190,7 +190,7 @@ def files():
           print(f"Error on GPT: {e}")
           
           
-    if len(gp_responses) == 0
+    if len(gp_responses) == 0:
       return
     
     max_len = 8000
@@ -206,12 +206,12 @@ def files():
             temperature=float(0.8),
             max_tokens=int(args.openai_max_tokens)
         )
-        print(f"Received response from ChatGPT for executive summaryy ")
+        print(f"Received response from ChatGPT for executive summary ")
         gpt_response = response.choices[0].message.content
         gpt_responses.append(gpt_response)
         # Adding a comment to the pull request with ChatGPT's response
         pull_request.create_issue_comment(
-          f"Joe Rogan executive review: \n\n {gpt_response}")
+          f"Joe Rogan Executive Review: \n\n {gpt_response}")
 
         print(f"Added executive summary.")
     except Exception as e:
