@@ -51,12 +51,12 @@ def files():
         print(f"Processing file: {filename}")
         # Getting the file content from the PR's last commit
         file_pr = repo.get_contents(filename, ref=sha)
-        content_pr = file_pr.decoded_content
 
-        # Ignore binary 
-
+        # Check if the file is a text file based on its encoding
         if file_pr.encoding == "base64":
-            print(f"Skipping binary file: {filename}") 
+            content_pr = base64.b64decode(file_pr.content).decode('utf-8')
+        else:
+            print(f"Skipping non-text file: {filename}")
             continue
 
         # Getting the file content from the main branch, should parametrize later on.
@@ -96,7 +96,7 @@ def files():
             max_tokens=int(args.openai_max_tokens)
         )
         print(f"Received response from ChatGPT for file: {filename}")
-        
+
         # Adding a comment to the pull request with ChatGPT's response
         pull_request.create_issue_comment(
           f"ChatGPT's response about `{file.filename}`:\n {response.choices[0].message.content}")
