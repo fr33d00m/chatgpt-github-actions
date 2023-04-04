@@ -103,7 +103,7 @@ def files():
         file_pr = repo.get_contents(filename, ref=sha)
 
         # Check if the file is a text file based on its encoding
-        filename = pr_file.filename
+        filename = file_pr.filename
         file_extension = os.path.splitext(filename)[1]
         if file_extension not in text_file_extensions:
           print(f"Skipping non-text file: {filename}")
