@@ -36,7 +36,7 @@ jobs:
     name: ChatGPT code reviewer
     steps:
       - name: ChatGTP code reviewer code
-        uses: sychus/chatgpt-github-actions@v1.4
+        uses: fr33d00m/chatgpt-github-actions@v1.4
         with:
           openai_api_key: ${{ secrets.openai_api_key }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
