@@ -1,5 +1,5 @@
 # action.yml
-name: 'ChatGPT reviewer and linter'
+name: 'ChatGPT GPT-3.5 Turbo reviewer and linter'
 description: 'Automating code review using ChatGPT with Github Actions integration on PRs.'
 inputs:
   openai_api_key:  # id of input
