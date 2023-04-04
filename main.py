@@ -32,51 +32,51 @@ def files():
     pull_request = repo.get_pull(int(args.github_pr_id))
 
     # Define a file size threshold (in bytes) for sending only the diff
-  file_size_threshold = 6000  # Adjust this value as needed
+    file_size_threshold = 6000  # Adjust this value as needed
 
-  # Process each file and its corresponding last commit SHA
-  for filename, sha in last_commit_shas.items():
-      # Getting the file content from the PR's last commit
-      file_pr = repo.get_contents(filename, ref=sha)
-      content_pr = file_pr.decoded_content
+    # Process each file and its corresponding last commit SHA
+    for filename, sha in last_commit_shas.items():
+        # Getting the file content from the PR's last commit
+        file_pr = repo.get_contents(filename, ref=sha)
+        content_pr = file_pr.decoded_content
 
-      # Ignore binary 
-      
-      if file_pr.encoding == "base64":
-          continue
+        # Ignore binary 
 
-      # Getting the file content from the main branch
-      file_main = repo.get_contents(filename, ref="main")
-      content_main = file_main.decoded_content
+        if file_pr.encoding == "base64":
+            continue
 
-      # Create a diff between the main branch and the PR's last commit
-      unified_diff = list(difflib.unified_diff(content_main.splitlines(), content_pr.splitlines()))
-      diff = "\n".join(unified_diff)
+        # Getting the file content from the main branch
+        file_main = repo.get_contents(filename, ref="main")
+        content_main = file_main.decoded_content
 
-      # Get relevant context from the original content if the file size is below the threshold
-      context_lines = []
-      if len(content_main.encode('utf-8')) < file_size_threshold:
-          for line in unified_diff:
-              if line.startswith('+') and not line.startswith('+++'):
-                  context_lines.append(line[1:].strip())
+        # Create a diff between the main branch and the PR's last commit
+        unified_diff = list(difflib.unified_diff(content_main.splitlines(), content_pr.splitlines()))
+        diff = "\n".join(unified_diff)
 
-          context = "\n".join(context_lines)
-          user_message = f"Review this code patch and suggest improvements and issues:\n\nOriginal Context:\n```{context}```\n\nDiff:\n```{diff}```"
-      else:
-          user_message = f"Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
+        # Get relevant context from the original content if the file size is below the threshold
+        context_lines = []
+        if len(content_main.encode('utf-8')) < file_size_threshold:
+            for line in unified_diff:
+                if line.startswith('+') and not line.startswith('+++'):
+                    context_lines.append(line[1:].strip())
 
-      # Sending the diff and context (if applicable) to ChatGPT
-      response = openai.ChatCompletion.create(
-          model=args.openai_engine,
-          messages=[
-              {"role": "system", "content": "You are a senior developer/architect and a helpful assistant."},
-              {"role": "user", "content": user_message}
-          ],
-          temperature=float(args.openai_temperature),
-          max_tokens=int(args.openai_max_tokens)
-      )
-      # Adding a comment to the pull request with ChatGPT's response
-      pull_request.create_issue_comment(
-        f"ChatGPT's response about `{file.filename}`:\n {response.choices[0].message.content}")
+            context = "\n".join(context_lines)
+            user_message = f"Review this code patch and suggest improvements and issues:\n\nOriginal Context:\n```{context}```\n\nDiff:\n```{diff}```"
+        else:
+            user_message = f"Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
+
+        # Sending the diff and context (if applicable) to ChatGPT
+        response = openai.ChatCompletion.create(
+            model=args.openai_engine,
+            messages=[
+                {"role": "system", "content": "You are a senior developer/architect and a helpful assistant."},
+                {"role": "user", "content": user_message}
+            ],
+            temperature=float(args.openai_temperature),
+            max_tokens=int(args.openai_max_tokens)
+        )
+        # Adding a comment to the pull request with ChatGPT's response
+        pull_request.create_issue_comment(
+          f"ChatGPT's response about `{file.filename}`:\n {response.choices[0].message.content}")
 
 files()
