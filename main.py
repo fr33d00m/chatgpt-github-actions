@@ -60,14 +60,19 @@ g = Github(args.github_token)
 
 def find_previous_review_comment(pr_comments, filename, bot_username):
     previous_comment = None
+    previous_comment_timestamp = None
     count = 0
 
-    for comment in pr_comments:
+    # Sort the comments by their creation time
+    sorted_pr_comments = sorted(pr_comments, key=lambda comment: comment.created_at)
+
+    for comment in sorted_pr_comments:
         if comment.user.login == bot_username and f"`{filename}`" in comment.body:
             previous_comment = comment.body
+            previous_comment_timestamp = comment.created_at
             count += 1
 
-    return previous_comment, count
+    return previous_comment, count, previous_comment_timestamp
 
 
 def files():
@@ -103,7 +108,7 @@ def files():
         file_pr = repo.get_contents(filename, ref=sha)
 
         # Check if the file is a text file based on its encoding
-        filename = file_pr.filename
+        filename = file_pr.path
         file_extension = os.path.splitext(filename)[1]
         if file_extension not in text_file_extensions:
           print(f"Skipping non-text file: {filename}")
@@ -119,6 +124,11 @@ def files():
 
         # Create a diff between the main branch and the PR's last commit
         unified_diff = list(difflib.unified_diff(content_main.decode().splitlines(), content_pr.decode().splitlines()))
+        
+        if not unified_diff:
+          print(f"No changes found in file: {filename}, skipping.")
+          continue
+        
         diff = "\n".join(unified_diff)
 
         # Get relevant context from the original content if the file size is below the threshold
@@ -135,7 +145,15 @@ def files():
             print(f"Sending diff only for file: {filename}")
             user_message = f"Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
             
-        previous_comment, review_count = find_previous_review_comment(pr_comments, filename, bot_username)
+        previous_comment, review_count, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename, bot_username)
+        
+        last_commit = repo.get_commit(sha)
+        last_commit_timestamp = last_commit.commit.committer.date
+
+        # Check if the file hasn't been changed since the last review
+        if previous_comment_timestamp and last_commit_timestamp <= previous_comment_timestamp:
+          print(f"No updates found in file: {filename} since the last review, skipping.")
+          continue
 
         if previous_comment:
             user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{previous_comment}\n Changes were made, BE more concise than the last time. Were the comments addressed?  {user_message}"
