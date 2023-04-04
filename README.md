@@ -36,7 +36,7 @@ jobs:
     name: ChatGPT code reviewer
     steps:
       - name: ChatGTP code reviewer code
-        uses: fr33d00m/chatgpt-github-actions@v1.5-turbo
+        uses: fr33d00m/chatgpt-github-actions@v2-turbo
         with:
           openai_api_key: ${{ secrets.openai_api_key }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -44,7 +44,6 @@ jobs:
           openai_engine: "gpt-3.5-turbo" #optional
           openai_temperature: 0.2 #optional
           openai_max_tokens: 2048 #optional
-          mode: file # file or patch 
 ```
 
 In the above workflow, the pull_request event triggers the workflow whenever a pull request is opened or synchronized. The workflow runs on the ubuntu-latest runner
@@ -72,3 +71,4 @@ When sending code to the ChatGPT language model, it is important to consider the
 ## Contributors
 - **Glauber Borges** - [glauberborges](https://github.com/glauberborges)
 - **Sychus** - [sychus](https://github.com/sychus)
+- **fr33d00m** -[fr33d00m](https://github.com/fr33d00m)
