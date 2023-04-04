@@ -96,7 +96,10 @@ def files():
         files = commit.files
         for file in files:
             # Update the last commit SHA for the file
-            last_commit_shas[file.filename] = commit.sha
+            if file.status == "removed":
+                last_commit_shas.pop(file.filename, None)
+            else:
+                last_commit_shas[file.filename] = commit.sha
 
     # Define a file size threshold (in bytes) for sending only the diff
     file_size_threshold = 6000  # Let's assume that 6k characters is too much for 2k tokens.
@@ -177,7 +180,7 @@ def files():
 
         # Adding a comment to the pull request with ChatGPT's response
         pull_request.create_issue_comment(
-          f"ChatGPT's response about `{file.filename}`:\n {response.choices[0].message.content}")
+          f"ChatGPT's response about `{filename}`:\n {response.choices[0].message.content}")
 
         print(f"Added comment to pull request for file: {filename}")
 
