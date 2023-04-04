@@ -5,6 +5,8 @@ import argparse
 import openai
 import os
 import requests
+import difflib
+
 from github import Github
 
 # Adding command-line arguments
@@ -42,10 +44,11 @@ def files():
             last_commit_shas[file.filename] = commit.sha
 
     # Define a file size threshold (in bytes) for sending only the diff
-    file_size_threshold = 6000  # Adjust this value as needed
+    file_size_threshold = 6000  # Let's assume that 6k characters is too much for 2k tokens.
 
     # Process each file and its corresponding last commit SHA
     for filename, sha in last_commit_shas.items():
+        print(f"Processing file: {filename}")
         # Getting the file content from the PR's last commit
         file_pr = repo.get_contents(filename, ref=sha)
         content_pr = file_pr.decoded_content
@@ -53,11 +56,16 @@ def files():
         # Ignore binary 
 
         if file_pr.encoding == "base64":
+            print(f"Skipping binary file: {filename}") 
             continue
 
-        # Getting the file content from the main branch
-        file_main = repo.get_contents(filename, ref="main")
-        content_main = file_main.decoded_content
+        # Getting the file content from the main branch, should parametrize later on.
+        try:
+            file_main = repo.get_contents(filename, ref="main")
+            content_main = file_main.decoded_content
+        except Exception:
+            print(f"File {filename} not found in main branch, assuming it's a new file.")
+            content_main = ""
 
         # Create a diff between the main branch and the PR's last commit
         unified_diff = list(difflib.unified_diff(content_main.splitlines(), content_pr.splitlines()))
@@ -71,8 +79,10 @@ def files():
                     context_lines.append(line[1:].strip())
 
             context = "\n".join(context_lines)
+            print(f"Sending context and diff for file: {filename}")
             user_message = f"Review this code patch and suggest improvements and issues:\n\nOriginal Context:\n```{context}```\n\nDiff:\n```{diff}```"
         else:
+            print(f"Sending diff only for file: {filename}")
             user_message = f"Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
 
         # Sending the diff and context (if applicable) to ChatGPT
@@ -85,8 +95,12 @@ def files():
             temperature=float(args.openai_temperature),
             max_tokens=int(args.openai_max_tokens)
         )
+        print(f"Received response from ChatGPT for file: {filename}")
+        
         # Adding a comment to the pull request with ChatGPT's response
         pull_request.create_issue_comment(
           f"ChatGPT's response about `{file.filename}`:\n {response.choices[0].message.content}")
+
+        print(f"Added comment to pull request for file: {filename}")
 
 files()
