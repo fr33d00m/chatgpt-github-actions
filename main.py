@@ -55,9 +55,9 @@ def files():
                 max_tokens=int(args.openai_max_tokens)
             )
 
-          # Adding a comment to the pull request with ChatGPT's response
-          pull_request.create_issue_comment(
-            f"ChatGPT's response about `{file.filename}`:\n {response.choices[0].message.content}")
+            # Adding a comment to the pull request with ChatGPT's response
+            pull_request.create_issue_comment(
+              f"ChatGPT's response about `{file.filename}`:\n {response.choices[0].message.content}")
 
 
 
