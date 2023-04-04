@@ -121,7 +121,9 @@ def files():
         except Exception:
             print(f"File {filename} not found in main branch, assuming it's a new file.")
             content_main = ""
-
+        
+        content_pr = file_pr.decoded_content
+        
         # Create a diff between the main branch and the PR's last commit
         unified_diff = list(difflib.unified_diff(content_main.decode().splitlines(), content_pr.decode().splitlines()))
         
