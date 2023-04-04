@@ -6,6 +6,8 @@ import openai
 import os
 import requests
 import difflib
+import base64
+
 
 from github import Github
 
