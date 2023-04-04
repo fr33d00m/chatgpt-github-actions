@@ -103,7 +103,8 @@ def files():
 
     # Define a file size threshold (in bytes) for sending only the diff
     file_size_threshold = 6000  # Let's assume that 6k characters is too much for 2k tokens.
-
+    
+    all_responses = []
     # Process each file and its corresponding last commit SHA
     for filename, sha in last_commit_shas.items():
         print(f"Processing file: {filename}")
@@ -167,21 +168,50 @@ def files():
         max_tokens = args.openai_max_tokens if review_count == 0 else max(30, args.openai_max_tokens // review_count)
 
         # Sending the diff and context (if applicable) to ChatGPT
+        try:
+          response = openai.ChatCompletion.create(
+              model=args.openai_engine,
+              messages=[
+                  {"role": "system", "content": "You are a senior developer/architect and a helpful assistant."},
+                  {"role": "user", "content": user_message}
+              ],
+              temperature=float(args.openai_temperature),
+              max_tokens=int(args.openai_max_tokens)
+          )
+          print(f"Received response from ChatGPT for file: {filename}")
+          gpt_response = response.choices[0].message.content
+          gpt_responses.append(gpt_response)
+          # Adding a comment to the pull request with ChatGPT's response
+          pull_request.create_issue_comment(
+            f"ChatGPT's response about `{filename}`:\n {gpt_response}")
+
+          print(f"Added comment to pull request for file: {filename}")
+        except Exception as e:
+          print(f"Error on GPT: {e}")
+          
+          
+    max_len = 8000
+    all_responses = '\n'.join(gpt_responses)[:max_len]
+    
+    try:
         response = openai.ChatCompletion.create(
             model=args.openai_engine,
             messages=[
-                {"role": "system", "content": "You are a senior developer/architect and a helpful assistant."},
-                {"role": "user", "content": user_message}
+                {"role": "system", "content": "You are an elite developer and CTO, but you're also Joe Rogan - the popular podcaster."},
+                {"role": "user", "content": f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval like you were Joe Rogan, use emoticons where applicable. Senior developer review, each file changed: `{all_responses}`"}
             ],
-            temperature=float(args.openai_temperature),
+            temperature=float(0.8),
             max_tokens=int(args.openai_max_tokens)
         )
         print(f"Received response from ChatGPT for file: {filename}")
-
+        gpt_response = response.choices[0].message.content
+        gpt_responses.append(gpt_response)
         # Adding a comment to the pull request with ChatGPT's response
         pull_request.create_issue_comment(
-          f"ChatGPT's response about `{filename}`:\n {response.choices[0].message.content}")
+          f"Joe Rogan executive review: {gpt_response}")
 
         print(f"Added comment to pull request for file: {filename}")
+    except Exception as e:
+        print(f"Error on GPT PR summary: {e}")
 
 files()
