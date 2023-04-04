@@ -87,7 +87,7 @@ def files():
       bot_username = "github-actions"
 
     pr_comments = pull_request.get_issue_comments()
-
+    gpt_responses = []
     last_commit_shas = {}
     commits = pull_request.get_commits()
     
@@ -190,6 +190,9 @@ def files():
           print(f"Error on GPT: {e}")
           
           
+    if len(gp_responses) == 0
+      return
+    
     max_len = 8000
     all_responses = '\n'.join(gpt_responses)[:max_len]
     
@@ -203,14 +206,14 @@ def files():
             temperature=float(0.8),
             max_tokens=int(args.openai_max_tokens)
         )
-        print(f"Received response from ChatGPT for file: {filename}")
+        print(f"Received response from ChatGPT for executive summaryy ")
         gpt_response = response.choices[0].message.content
         gpt_responses.append(gpt_response)
         # Adding a comment to the pull request with ChatGPT's response
         pull_request.create_issue_comment(
-          f"Joe Rogan executive review: {gpt_response}")
+          f"Joe Rogan executive review: \n\n {gpt_response}")
 
-        print(f"Added comment to pull request for file: {filename}")
+        print(f"Added executive summary.")
     except Exception as e:
         print(f"Error on GPT PR summary: {e}")
 
