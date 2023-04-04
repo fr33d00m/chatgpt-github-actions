@@ -102,7 +102,7 @@ def files():
 
             context = "\n".join(context_lines)
             print(f"Sending context and diff for file: {filename}")
-            user_message = f"Review this code patch and suggest improvements and issues:\n\nOriginal Context:\n```{context}```\n\nDiff:\n```{diff}```"
+            user_message = f"Review this code patch and suggest improvements and issues - be concise:\n\nOriginal Context:\n```{context}```\n\nDiff:\n```{diff}```"
         else:
             print(f"Sending diff only for file: {filename}")
             user_message = f"Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
@@ -110,7 +110,7 @@ def files():
         previous_comment, review_count = find_previous_review_comment(pr_comments, filename, bot_username)
 
         if previous_comment:
-            user_message = f"I previously reviewed this code patch and suggested improvements and issues:\n\n{previous_comment}\n Changes were made, now {user_message}"
+            user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{previous_comment}\n Changes were made, BE more concise than the last time. Were the comments addressed?  {user_message}"
 
             # Set max_tokens based on the review_count
         max_tokens = args.openai_max_tokens if review_count == 0 else max(30, args.openai_max_tokens // review_count)
