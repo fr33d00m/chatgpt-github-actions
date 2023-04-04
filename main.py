@@ -27,6 +27,34 @@ args = parser.parse_args()
 # Authenticating with the OpenAI API
 openai.api_key = args.openai_api_key
 
+text_file_extensions = [
+    '.txt', '.md', '.rst', '.asciidoc',
+    '.json', '.xml', '.yaml', '.yml', '.toml', '.ini', '.cfg',
+    '.js', '.jsx', '.ts', '.tsx', '.coffee',
+    '.py', '.pyw', '.pyx', '.pyo', '.pyc', '.pyd', '.pyi',
+    '.c', '.h', '.cpp', '.hpp', '.cc', '.cxx', '.hh', '.hxx', '.h++',
+    '.m', '.mm', '.cs', '.fs', '.fsx',
+    '.java', '.scala', '.kt', '.kts',
+    '.rb', '.php', '.php3', '.php4', '.php5', '.php7', '.phtml',
+    '.go', '.rs', '.swift',
+    '.sh', '.bash', '.zsh', '.ksh', '.csh', '.tcsh', '.fish',
+    '.pl', '.pm', '.t', '.pod', '.perl',
+    '.html', '.htm', '.xhtml', '.css', '.scss', '.sass', '.less',
+    '.sql', '.psql', '.pgsql',
+    '.lua', '.r', '.groovy', '.gradle', '.dart', '.elm', '.purs', '.svelte',
+    '.v', '.zig', '.cr', '.nim', '.jai', '.wren', '.odin', '.hx', '.hs', '.jl', '.ex', '.exs',
+    '.erl', '.hrl', '.beam', '.lfe', '.clj', '.cljs', '.cljc', '.clojure',
+    '.vbs', '.vb', '.bas', '.cls', '.frm', '.ctl', '.pag', '.dsr', '.dob', '.dsn',
+    '.pas', '.pp', '.inc', '.dpr', '.dpk', '.dfm', '.xfm', '.nfm', '.rpy', '.rpyc',
+    '.cob', '.cbl', '.cpy', '.ads', '.adb', '.asm', '.s', '.for', '.f', '.f77', '.f90', '.f95',
+    '.ada', '.adb', '.als', '.mli', '.ml', '.mll', '.mly', '.sml', '.fsi', '.fs', '.mlir', '.ll',
+    '.cmake', '.make', '.mak', '.mk', '.bashrc', '.zshrc', '.vimrc', '.gvimrc', '.ideavimrc',
+    '.inputrc', '.bash_profile', '.profile', '.aliases', '.zshenv', '.zprofile', '.zlogin',
+    '.zlogout', '.zshrc', '.gitconfig', '.gitignore', '.dockerignore', '.hgignore',
+    '.cvsignore', '.svnignore', '.bzrignore',
+]
+
+
 # Authenticating with the Github API
 g = Github(args.github_token)
 
@@ -75,11 +103,11 @@ def files():
         file_pr = repo.get_contents(filename, ref=sha)
 
         # Check if the file is a text file based on its encoding
-        if file_pr.encoding == "base64":
-            content_pr = base64.b64decode(file_pr.content).decode('utf-8')
-        else:
-            print(f"Skipping non-text file: {filename}")
-            continue
+        filename = pr_file.filename
+        file_extension = os.path.splitext(filename)[1]
+        if file_extension not in text_file_extensions:
+          print(f"Skipping non-text file: {filename}")
+          continue
 
         # Getting the file content from the main branch, should parametrize later on.
         try:
@@ -90,7 +118,7 @@ def files():
             content_main = ""
 
         # Create a diff between the main branch and the PR's last commit
-        unified_diff = list(difflib.unified_diff(content_main.splitlines(), content_pr.splitlines()))
+        unified_diff = list(difflib.unified_diff(content_main.decode().splitlines(), content_pr.decode().splitlines()))
         diff = "\n".join(unified_diff)
 
         # Get relevant context from the original content if the file size is below the threshold
