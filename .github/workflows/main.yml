@@ -8,11 +8,11 @@ jobs:
     name: ChatGPT explain code # Job name
     steps:
       - name: ChatGPT explain code # Step name
-        uses: sychus/chatgpt-github-actions@v1.6 # Use the ChatGPT Github Actions from cirolini repository
+        uses: fr33d00m/chatgpt-github-actions@v1.6 # Use the ChatGPT Github Actions from cirolini repository
         with:
           openai_api_key: ${{ secrets.openai_api_key }} # Get the OpenAI API key from repository secrets
           github_token: ${{ secrets.GITHUB_TOKEN }} # Get the Github Token from repository secrets
           github_pr_id: ${{ github.event.number }} # Get the Github Pull Request ID from the Github event
-          openai_engine: "text-davinci-002" # Optional: specify the OpenAI engine to use. Default is "text-davinci-002"
+          openai_engine: "gpt-3.5-turbo" # Optional: specify the OpenAI engine to use. Default is "text-davinci-002"
           openai_temperature: 0.2 # Optional: specify the sampling temperature for OpenAI. Default is 0.2
           openai_max_tokens: 2048 # Optional: specify the maximum number of tokens to generate in OpenAI completion. Default is 2048
