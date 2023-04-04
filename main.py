@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--openai_api_key', help='Your OpenAI API Key')
 parser.add_argument('--github_token', help='Your Github Token')
 parser.add_argument('--github_pr_id', help='Your Github PR ID')
-parser.add_argument('--openai_engine', default="text-davinci-002",
+parser.add_argument('--openai_engine', default="gpt-3.5-turbo",
                     help='Chat model to use. Options: any of the chat models')
 parser.add_argument('--openai_temperature', default=0.5,
                     help='Sampling temperature to use. Higher values means the model will take more risks. Recommended: 0.5')
@@ -30,11 +30,25 @@ openai.api_key = args.openai_api_key
 # Authenticating with the Github API
 g = Github(args.github_token)
 
+def find_previous_review_comment(pr_comments, filename, bot_username):
+    previous_comment = None
+    count = 0
+
+    for comment in pr_comments:
+        if comment.user.login == bot_username and f"`{filename}`" in comment.body:
+            previous_comment = comment.body
+            count += 1
+
+    return previous_comment, count
+
 
 def files():
     repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
     pull_request = repo.get_pull(int(args.github_pr_id))
-    
+    authenticated_user = g.get_user()
+    bot_username = authenticated_user.login
+    pr_comments = pull_request.get_issue_comments()
+
     last_commit_shas = {}
     commits = pull_request.get_commits()
     
@@ -86,6 +100,14 @@ def files():
         else:
             print(f"Sending diff only for file: {filename}")
             user_message = f"Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
+            
+        previous_comment, review_count = find_previous_review_comment(pr_comments, filename, bot_username)
+
+        if previous_comment:
+            user_message = f"I previously reviewed this code patch and suggested improvements and issues:\n\n{previous_comment}\n Changes were made, now {user_message}"
+
+            # Set max_tokens based on the review_count
+        max_tokens = args.openai_max_tokens if review_count == 0 else max(30, args.openai_max_tokens // review_count)
 
         # Sending the diff and context (if applicable) to ChatGPT
         response = openai.ChatCompletion.create(
