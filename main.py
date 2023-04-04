@@ -46,16 +46,19 @@ def files():
 
             # Sending the code to ChatGPT
             response = openai.ChatCompletion.create(
-                engine=args.openai_engine,
-                prompt=(
-                    f"Review this code patch and suggest improvements and issues:\n```{content}```"),
+                model=args.openai_engine,
+                messages=[
+                    {"role": "system", "content": "You are a senior developer/architect and a helpful assistant."},
+                    {"role": "user", "content": f"Review this code patch and suggest improvements and issues:\n```{content}```"}
+                ],
                 temperature=float(args.openai_temperature),
                 max_tokens=int(args.openai_max_tokens)
             )
 
-            # Adding a comment to the pull request with ChatGPT's response
-            pull_request.create_issue_comment(
-                f"ChatGPT's response about `{file.filename}`:\n {response['choices'][0]['text']}")
+          # Adding a comment to the pull request with ChatGPT's response
+          pull_request.create_issue_comment(
+            f"ChatGPT's response about `{file.filename}`:\n {response.choices[0].message.content}")
+
 
 
 def patch():
