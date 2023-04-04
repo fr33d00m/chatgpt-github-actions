@@ -135,7 +135,7 @@ def files():
 
         # Get relevant context from the original content if the file size is below the threshold
         context_lines = []
-        if if len(content_main) < file_size_threshold:
+        if len(content_main) < file_size_threshold:
             for line in unified_diff:
                 if line.startswith('+') and not line.startswith('+++'):
                     context_lines.append(line[1:].strip())
