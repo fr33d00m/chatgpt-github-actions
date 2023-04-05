@@ -4,11 +4,6 @@
 import argparse
 import openai
 import os
-import requests
-import difflib
-import base64
-import time
-import random
 
 from github import Github
 
@@ -25,6 +20,9 @@ parser.add_argument('--openai_temperature', default=0.5,
 parser.add_argument('--openai_max_tokens', default=2048,
                     help='The maximum number of tokens to generate in the completion.')
 args = parser.parse_args()
+
+if not args.github_summary_token:
+    args.github_summary_token = args.github_token
 
 # Authenticating with the OpenAI API
 openai.api_key = args.openai_api_key
@@ -85,7 +83,7 @@ def files():
       authenticated_user = g.get_user()
       bot_username = authenticated_user.login
     except Exception as e:
-      print(f"Failed to get authenticated user's username, falling back to 'github-actions'")
+      print(f"Failed to get authenticated user's username, falling back to 'github-actions[bot]'")
       bot_username = "github-actions[bot]"
 
     pr_comments = pull_request.get_issue_comments()
@@ -100,7 +98,8 @@ def files():
         files = commit.files
         for file in files:
             if file not in final_files:
-              continue
+            print(f"Skipping files not in final changeset: {filename}")
+            continue
               
             # Update the last commit SHA for the file
             if file.status == "removed":
@@ -110,52 +109,34 @@ def files():
 
     # Define a file size threshold (in bytes) for sending only the diff
     file_size_threshold = 6000  # Let's assume that 6k characters is too much for 2k tokens.
-    
-    all_responses = []
-    # Process each file and its corresponding last commit SHA
+
     for filename, sha in last_commit_shas.items():
         print(f"Processing file: {filename}")
 
         file_extension = os.path.splitext(filename)[1]
         if file_extension not in text_file_extensions:
-          print(f"Skipping non-text file: {filename}")
-          continue
-        
+            print(f"Skipping non-text file: {filename}")
+            continue
+
         # Getting the file content from the PR's last commit
         file_pr = repo.get_contents(filename, ref=sha)
 
-        # Getting the file content from the main branch, should parametrize later on.
-        try:
-            file_main = repo.get_contents(filename, ref="main")
-            content_main = file_main.decoded_content.decode("utf-8")
-        except Exception:
-            print(f"File {filename} not found in main branch, assuming it's a new file.")
-            content_main = ""
-        
         content_pr = file_pr.decoded_content.decode("utf-8")
-        
-        # Create a diff between the main branch and the PR's last commit
-        unified_diff = list(difflib.unified_diff(content_main.splitlines(), content_pr.splitlines()))
-        
-        if not unified_diff:
-          print(f"No changes found in file: {filename}, skipping.")
-          continue
-        
-        diff = "\n".join(unified_diff)
+
+        # Use file.patch attribute for the diff
+        diff = file_pr.patch
+
+        if not diff:
+            print(f"No changes found in file: {filename}, skipping.")
+            continue
 
         # Get relevant context from the original content if the file size is below the threshold
-        context_lines = []
-        if len(content_main) < file_size_threshold:
-            for line in unified_diff:
-                if line.startswith('+') and not line.startswith('+++'):
-                    context_lines.append(line[1:].strip())
-
-            context = "\n".join(context_lines)
+        if len(content_pr) < file_size_threshold:
             print(f"Sending context and diff for file: {filename}")
-            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. Avoid outputing code - keep it brief if you do. Review this code patch and suggest improvements and issues - be concise:\n\nOriginal Context:\n```{context}```\n\nDiff:\n```{diff}```"
+            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good, just type a single sentence starting with LGTM. Avoid outputing code - keep it brief if you do. Review this code patch and suggest improvements and issues:\n\nLatest file Context:\n```{content_pr}```\n\nDiff from main:\n```{diff}```"
         else:
             print(f"Sending diff only for file: {filename}")
-            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. Avoid outputing code - keep it brief if you do. Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
+            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good, just type a single sentence starting with LGTM. Avoid outputing code - keep it brief if you do. Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
             
         previous_comment, review_count, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename, bot_username)
         print(f"For file {filename} found {review_count} review comments. Last timestamp: {previous_comment_timestamp} ")
@@ -170,7 +151,7 @@ def files():
 
         if previous_comment:
             print(f"Adjusting the message for previous review!!")
-            user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{previous_comment}\n Changes were made, BE more concise than the last time. Were the comments addressed?  {user_message}"
+            user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{previous_comment}\n Changes were made, BE MORE concise than the last time. Were the comments addressed?  {user_message}"
 
             # Set max_tokens based on the review_count
         max_tokens = args.openai_max_tokens if review_count == 0 else max(30, args.openai_max_tokens // review_count)
@@ -209,7 +190,7 @@ def files():
             model=args.openai_engine,
             messages=[
                 {"role": "system", "content": "You are an elite developer and CTO, but you're also Joe Rogan - the popular podcaster."},
-                {"role": "user", "content": f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit. Senior developer review, each file changed: `{all_responses}`"}
+                {"role": "user", "content": f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit. Your team of senior developers reviewed the current PR, these are THEIR comments on each file changed: `{all_responses}`"}
             ],
             temperature=float(0.8),
             max_tokens=int(args.openai_max_tokens)
@@ -222,7 +203,7 @@ def files():
         pull_request = repo.get_pull(int(args.github_pr_id))
 
         pull_request.create_issue_comment(
-          f"Joe Rogan Executive Review: \n\n {gpt_response}")
+          f"PR AI Executive Review: \n\n {gpt_response}")
 
         print(f"Added executive summary.")
     except Exception as e:

@@ -12,7 +12,7 @@ inputs:
     default: ''
   github_summary_token:  # id of input
     description: 'Github Summary API Key'
-    required: true
+    required: false
     default: ''
   github_pr_id:  # id of input
     description: 'Github PR ID'
