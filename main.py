@@ -216,9 +216,10 @@ def files():
         )
         print(f"Received response from ChatGPT for executive summary ")
         gpt_response = response.choices[0].message.content
-        # Adding a comment to the pull request with ChatGPT's response
-        sleep_time = random.uniform(0.2, 2.0)
-        time.sleep(sleep_time)
+
+        g = Github(args.github_summary_token)
+        repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
+        pull_request = repo.get_pull(int(args.github_pr_id))
 
         pull_request.create_issue_comment(
           f"Joe Rogan Executive Review: \n\n {gpt_response}")
