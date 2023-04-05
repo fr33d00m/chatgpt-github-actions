@@ -88,7 +88,12 @@ def files():
       bot_username = "github-actions"
 
     pr_comments = pull_request.get_issue_comments()
-    print(f"All comments:\n\n {pr_comments} \n\n\n")
+
+    print(f"All comments:")
+    for comment in pr_comments:
+      print(f"User: {comment.user.login} \n")
+      print(f"Comment: {comment.body} \n")
+
     gpt_responses = []
     last_commit_shas = {}
     commits = pull_request.get_commits()
