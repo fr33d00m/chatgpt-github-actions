@@ -101,7 +101,7 @@ def files():
         files = commit.files
         for file in files:
             if file not in final_files:
-              print(f"Skipping files not in final changeset: {filename}")
+              print(f"Skipping files not in final changeset: {file.filename}")
               continue
               
             # Update the last commit SHA for the file
