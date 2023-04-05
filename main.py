@@ -108,12 +108,14 @@ def files():
             if file.status == "removed":
                 last_commit_shas.pop(file.filename, None)
             else:
-                last_commit_shas[file.filename] = commit.sha
+                last_commit_shas[file.filename] = {'sha': commit.sha, 'patch': file.patch}
 
     # Define a file size threshold (in bytes) for sending only the diff
     file_size_threshold = 6000  # Let's assume that 6k characters is too much for 2k tokens.
 
-    for filename, sha in last_commit_shas.items():
+    for filename, file_info in last_commit_shas.items():
+        sha = file_info['sha']
+        diff = file_info['patch']
         print(f"Processing file: {filename}")
 
         file_extension = os.path.splitext(filename)[1]
@@ -125,9 +127,6 @@ def files():
         file_pr = repo.get_contents(filename, ref=sha)
 
         content_pr = file_pr.decoded_content.decode("utf-8")
-
-        # Use file.patch attribute for the diff
-        diff = file_pr.patch
 
         if not diff:
             print(f"No changes found in file: {filename}, skipping.")
