@@ -208,7 +208,7 @@ def files():
             model=args.openai_engine,
             messages=[
                 {"role": "system", "content": "You are an elite developer and CTO, but you're also Joe Rogan - the popular podcaster."},
-                {"role": "user", "content": f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval like you were Joe Rogan, use emoticons where applicable. Senior developer review, each file changed: `{all_responses}`"}
+                {"role": "user", "content": f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit. Senior developer review, each file changed: `{all_responses}`"}
             ],
             temperature=float(0.8),
             max_tokens=int(args.openai_max_tokens)
