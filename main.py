@@ -92,14 +92,16 @@ def files():
     last_commit_shas = {}
     commits = pull_request.get_commits()
     final_files = pull_request.get_files();
+    print("PR file list:\n")
+    print("\n".join([file.filename for file in final_files]))
 
     for commit in commits:
         # Getting the modified files in the commit
         files = commit.files
         for file in files:
             if file not in final_files:
-            print(f"Skipping files not in final changeset: {filename}")
-            continue
+              print(f"Skipping files not in final changeset: {filename}")
+              continue
               
             # Update the last commit SHA for the file
             if file.status == "removed":
