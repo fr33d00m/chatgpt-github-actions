@@ -10,6 +10,10 @@ inputs:
     description: 'Github API Key'
     required: true
     default: ''
+  github_summary_token:  # id of input
+    description: 'Github Summary API Key'
+    required: true
+    default: ''
   github_pr_id:  # id of input
     description: 'Github PR ID'
     required: true
@@ -33,6 +37,7 @@ runs:
   args:
     - ${{ inputs.openai_api_key }}
     - ${{ inputs.github_token }}
+    - ${{ inputs.github_summary_token }}
     - ${{ inputs.github_pr_id }}
     - ${{ inputs.openai_engine }}
     - ${{ inputs.openai_temperature }}
