@@ -103,7 +103,7 @@ def files():
         # Getting the modified files in the commit
         files = commit.files
         for file in files:
-             try:
+            try:
                 repo.get_contents(file.filename, ref=final_state)
             except Exception as e:
                 print(f"File {file.filename} not found in PR's final state, skipping.")
