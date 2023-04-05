@@ -55,8 +55,7 @@ text_file_extensions = [
 ]
 
 
-# Authenticating with the Github API
-g = Github(args.github_token)
+
 
 def find_previous_review_comment(pr_comments, filename, bot_username):
     previous_comment = None
@@ -76,6 +75,8 @@ def find_previous_review_comment(pr_comments, filename, bot_username):
 
 
 def files():
+    # Authenticating with the Github API
+    g = Github(args.github_token)
     repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
     pull_request = repo.get_pull(int(args.github_pr_id))
     
