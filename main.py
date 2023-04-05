@@ -16,6 +16,7 @@ from github import Github
 parser = argparse.ArgumentParser()
 parser.add_argument('--openai_api_key', help='Your OpenAI API Key')
 parser.add_argument('--github_token', help='Your Github Token')
+parser.add_argument('--github_summary_token', help='Your Github Summary Token')
 parser.add_argument('--github_pr_id', help='Your Github PR ID')
 parser.add_argument('--openai_engine', default="gpt-3.5-turbo",
                     help='Chat model to use. Options: any of the chat models')
