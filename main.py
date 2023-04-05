@@ -85,7 +85,7 @@ def files():
       bot_username = authenticated_user.login
     except Exception as e:
       print(f"Failed to get authenticated user's username, falling back to 'github-actions'")
-      bot_username = "github-actions"
+      bot_username = "github-actions[bot]"
 
     pr_comments = pull_request.get_issue_comments()
 
@@ -152,10 +152,10 @@ def files():
 
             context = "\n".join(context_lines)
             print(f"Sending context and diff for file: {filename}")
-            user_message = f"Review this code patch and suggest improvements and issues - be concise:\n\nOriginal Context:\n```{context}```\n\nDiff:\n```{diff}```"
+            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. Avoid outputing code - keep it brief if you do. Review this code patch and suggest improvements and issues - be concise:\n\nOriginal Context:\n```{context}```\n\nDiff:\n```{diff}```"
         else:
             print(f"Sending diff only for file: {filename}")
-            user_message = f"Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
+            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. Avoid outputing code - keep it brief if you do. Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
             
         previous_comment, review_count, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename, bot_username)
         print(f"For file {filename} found {review_count} review comments. Last timestamp: {previous_comment_timestamp} ")
