@@ -100,7 +100,7 @@ def files():
         # Getting the modified files in the commit
         files = commit.files
         for file in files:
-            if file.filename not in [f.filename for f in final_files]
+            if file.filename not in [f.filename for f in final_files]:
               print(f"Skipping files not in final changeset: {file.filename}")
               continue
               
