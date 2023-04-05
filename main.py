@@ -110,15 +110,14 @@ def files():
     # Process each file and its corresponding last commit SHA
     for filename, sha in last_commit_shas.items():
         print(f"Processing file: {filename}")
-        # Getting the file content from the PR's last commit
-        file_pr = repo.get_contents(filename, ref=sha)
 
-        # Check if the file is a text file based on its encoding
-        filename = file_pr.path
         file_extension = os.path.splitext(filename)[1]
         if file_extension not in text_file_extensions:
           print(f"Skipping non-text file: {filename}")
           continue
+        
+        # Getting the file content from the PR's last commit
+        file_pr = repo.get_contents(filename, ref=sha)
 
         # Getting the file content from the main branch, should parametrize later on.
         try:
