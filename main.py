@@ -10,7 +10,6 @@ import base64
 import time
 import random
 
-
 from github import Github
 
 # Adding command-line arguments
@@ -153,7 +152,8 @@ def files():
             user_message = f"Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
             
         previous_comment, review_count, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename, bot_username)
-        
+        print(f"For file {filename} found {review_count} review comments. Last timestamp: {previous_comment_timestamp} ")
+
         last_commit = repo.get_commit(sha)
         last_commit_timestamp = last_commit.commit.committer.date
 
@@ -163,6 +163,7 @@ def files():
           continue
 
         if previous_comment:
+            print(f"Adjusting the message for previous review!!")
             user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{previous_comment}\n Changes were made, BE more concise than the last time. Were the comments addressed?  {user_message}"
 
             # Set max_tokens based on the review_count
