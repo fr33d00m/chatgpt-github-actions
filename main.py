@@ -7,6 +7,8 @@ import os
 import requests
 import difflib
 import base64
+import time
+import random
 
 
 from github import Github
@@ -209,6 +211,9 @@ def files():
         print(f"Received response from ChatGPT for executive summary ")
         gpt_response = response.choices[0].message.content
         # Adding a comment to the pull request with ChatGPT's response
+        sleep_time = random.uniform(0.2, 2.0)
+        time.sleep(sleep_time)
+
         pull_request.create_issue_comment(
           f"Joe Rogan Executive Review: \n\n {gpt_response}")
 
