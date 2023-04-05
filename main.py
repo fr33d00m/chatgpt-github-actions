@@ -97,11 +97,17 @@ def files():
     gpt_responses = []
     last_commit_shas = {}
     commits = pull_request.get_commits()
-    
+    final_state = pull_request.merge_commit_sha or pull_request.head.sha
+
     for commit in commits:
         # Getting the modified files in the commit
         files = commit.files
         for file in files:
+             try:
+                repo.get_contents(file.filename, ref=final_state)
+            except Exception as e:
+                print(f"File {file.filename} not found in PR's final state, skipping.")
+                continue
             # Update the last commit SHA for the file
             if file.status == "removed":
                 last_commit_shas.pop(file.filename, None)
