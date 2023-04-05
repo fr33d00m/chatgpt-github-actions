@@ -156,7 +156,7 @@ def files():
             user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{previous_comment}\n Changes were made, BE MORE concise than the last time. Were the comments addressed?  {user_message}"
 
             # Set max_tokens based on the review_count
-        max_tokens = args.openai_max_tokens if review_count == 0 else max(30, args.openai_max_tokens // review_count)
+        max_tokens = args.openai_max_tokens if review_count == 0 else max(30, int(args.openai_max_tokens) // review_count)
 
         # Sending the diff and context (if applicable) to ChatGPT
         try:
