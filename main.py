@@ -54,12 +54,14 @@ text_file_extensions = [
     '.cvsignore', '.svnignore', '.bzrignore', '.sol',
 ]
 
+
 def filter_lgtm_messages(messages):
     filtered_messages = []
     for message in messages:
         if "LGTM" not in message or (message != "LGTM" and "LGTM." not in message):
             filtered_messages.append(message)
     return filtered_messages
+
 
 def find_previous_review_comment(pr_comments, filename, bot_username):
     previous_comment = None
@@ -77,18 +79,19 @@ def find_previous_review_comment(pr_comments, filename, bot_username):
 
     return previous_comment, count, previous_comment_timestamp
 
+
 def files():
     # Authenticating with the Github API
     g = Github(args.github_token)
     repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
     pull_request = repo.get_pull(int(args.github_pr_id))
-    
+
     try:
-      authenticated_user = g.get_user()
-      bot_username = authenticated_user.login
+        authenticated_user = g.get_user()
+        bot_username = authenticated_user.login
     except Exception as e:
-      print(f"Failed to get authenticated user's username, falling back to 'github-actions[bot]'")
-      bot_username = "github-actions[bot]"
+        print(f"Failed to get authenticated user's username, falling back to 'github-actions[bot]'")
+        bot_username = "github-actions[bot]"
 
     pr_comments = pull_request.get_issue_comments()
 
@@ -105,9 +108,9 @@ def files():
         files = commit.files
         for file in files:
             if file.filename not in [f.filename for f in final_files]:
-              print(f"Skipping files not in final changeset: {file.filename}")
-              continue
-              
+                print(f"Skipping files not in final changeset: {file.filename}")
+                continue
+
             # Update the last commit SHA for the file
             if file.status == "removed":
                 last_commit_shas.pop(file.filename, None)
@@ -147,17 +150,19 @@ def files():
             user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good ONLY write LGTM." \
                            f" Don't write LGTM if there are important insights or suggestions. Avoid outputing code - keep it brief if you do. " \
                            f"Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
-            
-        previous_comment, review_count, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename, bot_username)
-        print(f"For file {filename} found {review_count} review comments. Last timestamp: {previous_comment_timestamp} ")
+
+        previous_comment, review_count, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename,
+                                                                                                  bot_username)
+        print(
+            f"For file {filename} found {review_count} review comments. Last timestamp: {previous_comment_timestamp} ")
 
         last_commit = repo.get_commit(sha)
         last_commit_timestamp = last_commit.commit.committer.date
 
         # Check if the file hasn't been changed since the last review
         if previous_comment_timestamp and last_commit_timestamp <= previous_comment_timestamp:
-          print(f"No updates found in file: {filename} since the last review, skipping.")
-          continue
+            print(f"No updates found in file: {filename} since the last review, skipping.")
+            continue
 
         if previous_comment:
             print(f"Adjusting the message for previous review!!")
@@ -165,38 +170,34 @@ def files():
                            f"Changes were made, BE MORE concise than the last time. Were the comments addressed?  {user_message}"
 
             # Set max_tokens based on the review_count
-        max_tokens = args.openai_max_tokens if review_count == 0 else max(30, int(args.openai_max_tokens) // review_count)
+        max_tokens = args.openai_max_tokens if review_count == 0 else max(30,
+                                                                          int(args.openai_max_tokens) // review_count)
 
         # Sending the diff and context (if applicable) to ChatGPT
         try:
-          response = openai.ChatCompletion.create(
-              model=args.openai_engine,
-              messages=[
-                  {"role": "system", "content": "You are a senior developer/architect and a helpful assistant."},
-                  {"role": "user", "content": user_message}
-              ],
-              temperature=float(args.openai_temperature),
-              max_tokens=int(max_tokens)
-          )
-          print(f"Received response from ChatGPT for file: {filename}")
-          gpt_response = response.choices[0].message.content
-          gpt_responses.append(gpt_response)
+            response = openai.ChatCompletion.create(
+                model=args.openai_engine,
+                messages=[
+                    {"role": "system", "content": "You are a senior developer/architect and a helpful assistant."},
+                    {"role": "user", "content": user_message}
+                ],
+                temperature=float(args.openai_temperature),
+                max_tokens=int(max_tokens)
+            )
+            print(f"Received response from ChatGPT for file: {filename}")
+            gpt_response = response.choices[0].message.content
+            gpt_responses.append(gpt_response)
 
-          if gpt_response.strip() != "LGTM":
-              engineering_feedback.append(f"### Analysis on `{filename}`:\n"
-                                          f"{gpt_response}\n\n")
+            if gpt_response.strip() != "LGTM":
+                engineering_feedback.append(f"### Analysis on `{filename}`:\n"
+                                            f"{gpt_response}\n\n")
 
         except Exception as e:
-          print(f"Error on GPT: {e}")
+            print(f"Error on GPT: {e}")
 
     if len(engineering_feedback) == 0:
         return
 
-        # Create a single comment with all engineering feedback
-    pull_request.create_issue_comment(
-        f"ChatGPT's Engineering Feedback:\n\n" + "\n".join(engineering_feedback)
-    )
-    
     max_len = 8000
     all_responses = '\n'.join(gpt_responses)[:max_len]
 
@@ -214,8 +215,9 @@ def files():
         response = openai.ChatCompletion.create(
             model=args.openai_engine,
             messages=[
-                {"role": "system", "content": "You are an elite developer and CTO, but you're also Joe Rogan - the popular podcaster."},
-                {"role": "user", "content": user_message }
+                {"role": "system",
+                 "content": "You are an elite developer and CTO, but you're also Joe Rogan - the popular podcaster."},
+                {"role": "user", "content": user_message}
             ],
             temperature=float(0.8),
             max_tokens=int(args.openai_max_tokens)
@@ -227,11 +229,19 @@ def files():
         repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
         pull_request = repo.get_pull(int(args.github_pr_id))
 
+        # Create a single comment with all engineering feedback
         pull_request.create_issue_comment(
-          f"PR AI Executive Review: \n\n {gpt_response}")
+
+        )
+        combined_feedback = (
+                f"## GPT3.5 Engineering Feedback:\n\n" + "\n".join(engineering_feedback) + "\n\n"
+                f"## Executive Review:\n\n{gpt_response}"
+        )
+        pull_request.create_issue_comment(combined_feedback)
 
         print(f"Added executive summary.")
     except Exception as e:
         print(f"Error on GPT PR summary: {e}")
+
 
 files()
