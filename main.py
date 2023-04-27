@@ -55,8 +55,7 @@ text_file_extensions = [
 ]
 
 
-# Authenticating with the Github API
-g = Github(args.github_token)
+
 
 def filter_lgtm_messages(messages):
     filtered_messages = []
@@ -83,6 +82,8 @@ def find_previous_review_comment(pr_comments, filename, bot_username):
 
 
 def files():
+    # Authenticating with the Github API
+    g = Github(args.github_token)
     repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
     pull_request = repo.get_pull(int(args.github_pr_id))
     
@@ -100,25 +101,29 @@ def files():
     last_commit_shas = {}
     commits = pull_request.get_commits()
     final_files = pull_request.get_files();
+    print("PR file list:\n")
+    print("\n".join([file.filename for file in final_files]))
 
     for commit in commits:
         # Getting the modified files in the commit
         files = commit.files
         for file in files:
-            if file not in final_files:
-            print(f"Skipping files not in final changeset: {filename}")
-            continue
+            if file.filename not in [f.filename for f in final_files]:
+              print(f"Skipping files not in final changeset: {file.filename}")
+              continue
               
             # Update the last commit SHA for the file
             if file.status == "removed":
                 last_commit_shas.pop(file.filename, None)
             else:
-                last_commit_shas[file.filename] = commit.sha
+                last_commit_shas[file.filename] = {'sha': commit.sha, 'patch': file.patch}
 
     # Define a file size threshold (in bytes) for sending only the diff
     file_size_threshold = 6000  # Let's assume that 6k characters is too much for 2k tokens.
 
-    for filename, sha in last_commit_shas.items():
+    for filename, file_info in last_commit_shas.items():
+        sha = file_info['sha']
+        diff = file_info['patch']
         print(f"Processing file: {filename}")
 
         file_extension = os.path.splitext(filename)[1]
@@ -130,9 +135,6 @@ def files():
         file_pr = repo.get_contents(filename, ref=sha)
 
         content_pr = file_pr.decoded_content.decode("utf-8")
-
-        # Use file.patch attribute for the diff
-        diff = file_pr.patch
 
         if not diff:
             print(f"No changes found in file: {filename}, skipping.")
@@ -162,7 +164,7 @@ def files():
             user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{previous_comment}\n Changes were made, BE MORE concise than the last time. Were the comments addressed?  {user_message}"
 
             # Set max_tokens based on the review_count
-        max_tokens = args.openai_max_tokens if review_count == 0 else max(30, args.openai_max_tokens // review_count)
+        max_tokens = args.openai_max_tokens if review_count == 0 else max(30, int(args.openai_max_tokens) // review_count)
 
         # Sending the diff and context (if applicable) to ChatGPT
         try:
