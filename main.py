@@ -54,9 +54,6 @@ text_file_extensions = [
     '.cvsignore', '.svnignore', '.bzrignore',
 ]
 
-
-
-
 def filter_lgtm_messages(messages):
     filtered_messages = []
     for message in messages:
@@ -79,7 +76,6 @@ def find_previous_review_comment(pr_comments, filename, bot_username):
             count += 1
 
     return previous_comment, count, previous_comment_timestamp
-
 
 def files():
     # Authenticating with the Github API
