@@ -58,6 +58,13 @@ text_file_extensions = [
 # Authenticating with the Github API
 g = Github(args.github_token)
 
+def filter_lgtm_messages(messages):
+    filtered_messages = []
+    for message in messages:
+        if "LGTM" not in message or (message != "LGTM" and "LGTM." not in message):
+            filtered_messages.append(message)
+    return filtered_messages
+
 def find_previous_review_comment(pr_comments, filename, bot_username):
     previous_comment = None
     previous_comment_timestamp = None
@@ -88,6 +95,7 @@ def files():
 
     pr_comments = pull_request.get_issue_comments()
 
+    engineering_feedback = []
     gpt_responses = []
     last_commit_shas = {}
     commits = pull_request.get_commits()
@@ -133,10 +141,10 @@ def files():
         # Get relevant context from the original content if the file size is below the threshold
         if len(content_pr) < file_size_threshold:
             print(f"Sending context and diff for file: {filename}")
-            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good, just type a single sentence starting with LGTM. Avoid outputing code - keep it brief if you do. Review this code patch and suggest improvements and issues:\n\nLatest file Context:\n```{content_pr}```\n\nDiff from main:\n```{diff}```"
+            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good, just type a single sentence starting with LGTM. Don't write LGTM if there are important insights or suggestions. Avoid outputing code - keep it brief if you do. Review this code patch and suggest improvements and issues:\n\nLatest file Context:\n```{content_pr}```\n\nDiff from main:\n```{diff}```"
         else:
             print(f"Sending diff only for file: {filename}")
-            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good, just type a single sentence starting with LGTM. Avoid outputing code - keep it brief if you do. Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
+            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good, just type a single sentence starting with LGTM. Don't write LGTM if there are important insights or suggestions. Avoid outputing code - keep it brief if you do. Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
             
         previous_comment, review_count, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename, bot_username)
         print(f"For file {filename} found {review_count} review comments. Last timestamp: {previous_comment_timestamp} ")
@@ -165,32 +173,41 @@ def files():
                   {"role": "user", "content": user_message}
               ],
               temperature=float(args.openai_temperature),
-              max_tokens=int(args.openai_max_tokens)
+              max_tokens=int(max_tokens)
           )
           print(f"Received response from ChatGPT for file: {filename}")
           gpt_response = response.choices[0].message.content
           gpt_responses.append(gpt_response)
-          # Adding a comment to the pull request with ChatGPT's response
-          pull_request.create_issue_comment(
-            f"ChatGPT's response about `{filename}`:\n {gpt_response}")
 
-          print(f"Added comment to pull request for file: {filename}")
+          if gpt_response.strip() != "LGTM":
+              engineering_feedback.append(f"{filename}:\n{gpt_response}\n---")
+
         except Exception as e:
           print(f"Error on GPT: {e}")
-          
-          
-    if len(gpt_responses) == 0:
-      return
+
+    if len(engineering_feedback) == 0:
+        return
+
+        # Create a single comment with all engineering feedback
+    pull_request.create_issue_comment(
+        f"ChatGPT's Engineering Feedback:\n\n" + "\n".join(engineering_feedback)
+    )
     
     max_len = 8000
     all_responses = '\n'.join(gpt_responses)[:max_len]
-    
+
+    previous_exec_feedback, _, _ = find_previous_review_comment(pr_comments, "PR AI Executive Review", bot_username)
+    if previous_exec_feedback:
+        user_message = f"Last time, you summarized the feedback like this:\n\n{previous_exec_feedback}\n\nThis time, your team of senior developers reviewed the current PR, and these are THEIR comments on each file changed: `{all_responses}`"
+    else:
+        user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit. Your team of senior developers reviewed the current PR, these are THEIR comments on each file changed: `{all_responses}`"
+
     try:
         response = openai.ChatCompletion.create(
             model=args.openai_engine,
             messages=[
                 {"role": "system", "content": "You are an elite developer and CTO, but you're also Joe Rogan - the popular podcaster."},
-                {"role": "user", "content": f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit. Your team of senior developers reviewed the current PR, these are THEIR comments on each file changed: `{all_responses}`"}
+                {"role": "user", "content": user_message }
             ],
             temperature=float(0.8),
             max_tokens=int(args.openai_max_tokens)
