@@ -51,7 +51,7 @@ text_file_extensions = [
     '.cmake', '.make', '.mak', '.mk', '.bashrc', '.zshrc', '.vimrc', '.gvimrc', '.ideavimrc',
     '.inputrc', '.bash_profile', '.profile', '.aliases', '.zshenv', '.zprofile', '.zlogin',
     '.zlogout', '.zshrc', '.gitconfig', '.gitignore', '.dockerignore', '.hgignore',
-    '.cvsignore', '.svnignore', '.bzrignore',
+    '.cvsignore', '.svnignore', '.bzrignore', '.sol',
 ]
 
 def filter_lgtm_messages(messages):
@@ -139,10 +139,14 @@ def files():
         # Get relevant context from the original content if the file size is below the threshold
         if len(content_pr) < file_size_threshold:
             print(f"Sending context and diff for file: {filename}")
-            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good, just type a single sentence starting with LGTM. Don't write LGTM if there are important insights or suggestions. Avoid outputing code - keep it brief if you do. Review this code patch and suggest improvements and issues:\n\nLatest file Context:\n```{content_pr}```\n\nDiff from main:\n```{diff}```"
+            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good ONLY write LGTM. " \
+                           f"Don't write LGTM if there are important insights or suggestions. Avoid outputing code - keep it brief if you do. " \
+                           f"Review this code patch and suggest improvements and issues:\n\nLatest file Context:\n```{content_pr}```\n\nDiff from main:\n```{diff}```"
         else:
             print(f"Sending diff only for file: {filename}")
-            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good, just type a single sentence starting with LGTM. Don't write LGTM if there are important insights or suggestions. Avoid outputing code - keep it brief if you do. Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
+            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good ONLY write LGTM." \
+                           f" Don't write LGTM if there are important insights or suggestions. Avoid outputing code - keep it brief if you do. " \
+                           f"Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
             
         previous_comment, review_count, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename, bot_username)
         print(f"For file {filename} found {review_count} review comments. Last timestamp: {previous_comment_timestamp} ")
@@ -157,7 +161,8 @@ def files():
 
         if previous_comment:
             print(f"Adjusting the message for previous review!!")
-            user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{previous_comment}\n Changes were made, BE MORE concise than the last time. Were the comments addressed?  {user_message}"
+            user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{previous_comment}\n " \
+                           f"Changes were made, BE MORE concise than the last time. Were the comments addressed?  {user_message}"
 
             # Set max_tokens based on the review_count
         max_tokens = args.openai_max_tokens if review_count == 0 else max(30, int(args.openai_max_tokens) // review_count)
@@ -178,7 +183,8 @@ def files():
           gpt_responses.append(gpt_response)
 
           if gpt_response.strip() != "LGTM":
-              engineering_feedback.append(f"{filename}:\n{gpt_response}\n---")
+              engineering_feedback.append(f"### Analysis on `{filename}`:\n"
+                                          f"{gpt_response}\n\n")
 
         except Exception as e:
           print(f"Error on GPT: {e}")
@@ -196,9 +202,13 @@ def files():
 
     previous_exec_feedback, _, _ = find_previous_review_comment(pr_comments, "PR AI Executive Review", bot_username)
     if previous_exec_feedback:
-        user_message = f"Last time, you summarized the feedback like this:\n\n{previous_exec_feedback}\n\nThis time, your team of senior developers reviewed the current PR, and these are THEIR comments on each file changed: `{all_responses}`"
+        user_message = f"Last time, you summarized the feedback like this:\n\n{previous_exec_feedback}\n\n" \
+                       f"This time, your team of senior developers reviewed the current PR, " \
+                       f"and these are THEIR comments on each file changed: `{all_responses}`"
     else:
-        user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit. Your team of senior developers reviewed the current PR, these are THEIR comments on each file changed: `{all_responses}`"
+        user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval" \
+                       f" like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit. " \
+                       f"Your team of senior developers reviewed the current PR, these are THEIR comments on each file changed: `{all_responses}`"
 
     try:
         response = openai.ChatCompletion.create(
