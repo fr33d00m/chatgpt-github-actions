@@ -189,7 +189,7 @@ def files():
             gpt_responses.append(gpt_response)
 
             if gpt_response.strip() != "LGTM":
-                engineering_feedback.append(f"### Analysis on `{filename}`:\n"
+                engineering_feedback.append(f"### `{filename}`:\n"
                                             f"{gpt_response}\n\n")
 
         except Exception as e:
@@ -201,7 +201,7 @@ def files():
     max_len = 8000
     all_responses = '\n'.join(gpt_responses)[:max_len]
 
-    previous_exec_feedback, _, _ = find_previous_review_comment(pr_comments, "PR AI Executive Review", bot_username)
+    previous_exec_feedback, _, _ = find_previous_review_comment(pr_comments, "Executive Review", bot_username)
     if previous_exec_feedback:
         user_message = f"Last time, you summarized the feedback like this:\n\n{previous_exec_feedback}\n\n" \
                        f"This time, your team of senior developers reviewed the current PR, " \
