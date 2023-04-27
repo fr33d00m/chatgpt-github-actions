@@ -229,10 +229,6 @@ def files():
         repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
         pull_request = repo.get_pull(int(args.github_pr_id))
 
-        # Create a single comment with all engineering feedback
-        pull_request.create_issue_comment(
-
-        )
         combined_feedback = (
                 f"## GPT3.5 Engineering Feedback:\n\n" + "\n".join(engineering_feedback) + "\n\n"
                 f"## Executive Review:\n\n{gpt_response}"
