@@ -188,14 +188,14 @@ def files():
             gpt_response = response.choices[0].message.content
             gpt_responses.append(gpt_response)
 
-            if gpt_response.strip() != "LGTM":
+            if gpt_response.strip() != "LGTM" or gpt_response.strip() != "LGTM.":
                 engineering_feedback.append(f"### `{filename}`:\n"
                                             f"{gpt_response}\n\n")
 
         except Exception as e:
             print(f"Error on GPT: {e}")
 
-    if len(engineering_feedback) == 0:
+    if len(gpt_responses) == 0:
         return
 
     max_len = 8000
