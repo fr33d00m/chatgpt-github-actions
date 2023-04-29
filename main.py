@@ -54,16 +54,24 @@ text_file_extensions = [
     '.cvsignore', '.svnignore', '.bzrignore', '.sol',
 ]
 
+def get_human_comments_since_last_review(pr_comments, filename, bot_username, last_review_timestamp):
+    human_comments = []
+
+    for comment in pr_comments:
+        if comment.user.login != bot_username and comment.path == filename and comment.created_at > last_review_timestamp:
+            human_comments.append(f"{comment.user.login} (line {comment.position}): {comment.body}")
+
+    return human_comments
 
 def filter_lgtm_messages(messages):
     filtered_messages = []
     for message in messages:
-        if "LGTM" not in message or (message != "LGTM" and "LGTM." not in message):
+        if message != "LGTM" and message != "LGTM.":
             filtered_messages.append(message)
     return filtered_messages
 
 
-def find_previous_review_comment(pr_comments, filename, bot_username):
+def find_previous_review_comment(pr_comments, filename, bot_username, search_for_exec_review=False):
     previous_comment = None
     previous_comment_timestamp = None
     count = 0
@@ -72,10 +80,14 @@ def find_previous_review_comment(pr_comments, filename, bot_username):
     sorted_pr_comments = sorted(pr_comments, key=lambda comment: comment.created_at)
 
     for comment in sorted_pr_comments:
-        if comment.user.login == bot_username and f"`{filename}`" in comment.body:
-            previous_comment = comment.body
-            previous_comment_timestamp = comment.created_at
-            count += 1
+        if comment.user.login == bot_username:
+            if search_for_exec_review:
+                if "Executive Review" in comment.body:
+                    previous_comment = comment.body.split("Executive Review:")[-1].strip()
+            else:
+                if f"`{filename}`" in comment.body:
+                    previous_comment = comment.body
+
 
     return previous_comment, count, previous_comment_timestamp
 
@@ -159,6 +171,12 @@ def files():
         last_commit = repo.get_commit(sha)
         last_commit_timestamp = last_commit.commit.committer.date
 
+        human_comments = get_human_comments_since_last_review(pr_comments, filename, bot_username,
+                                                              previous_comment_timestamp)
+        if human_comments:
+            human_comments_str = "\n".join(human_comments)
+            user_message = f"{user_message}\n\n. Additionally these are human comments on the code:\n\n{human_comments_str}"
+
         # Check if the file hasn't been changed since the last review
         if previous_comment_timestamp and last_commit_timestamp <= previous_comment_timestamp:
             print(f"No updates found in file: {filename} since the last review, skipping.")
@@ -166,7 +184,8 @@ def files():
 
         if previous_comment:
             print(f"Adjusting the message for previous review!!")
-            user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{previous_comment}\n " \
+            gpt_engineer_feedback = previous_comment.split(f"### `{filename}`:")[-1].split("### ")[0].strip()
+            user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{gpt_engineer_feedback}\n " \
                            f"Changes were made, BE MORE concise than the last time. Were the comments addressed?  {user_message}"
 
             # Set max_tokens based on the review_count
@@ -201,17 +220,18 @@ def files():
     max_len = 8000
     all_responses = '\n'.join(gpt_responses)[:max_len]
 
-    previous_exec_feedback, _, _ = find_previous_review_comment(pr_comments, "Executive Review", bot_username)
+    previous_exec_feedback, _, _ = find_previous_review_comment(pr_comments, "Executive Review", bot_username, True)
     if previous_exec_feedback:
         user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval." \
                        f"Don't just repeat verbotim what your senior devs said." \
-                       f"like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit.\n" \
+                       f"Review like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit.\n" \
                        f"Last time, you summarized the feedback like this:\n\n{previous_exec_feedback}\n\n" \
                        f"This time, your team of senior developers reviewed the current PR, " \
                        f"and these are THEIR comments on each file changed: `{all_responses}`"
     else:
         user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval" \
-                       f" like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit. " \
+                       f"Don't just repeat verbotim what your senior devs said." \
+                       f"Review like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit. " \
                        f"Your team of senior developers reviewed the current PR, these are THEIR comments on each file changed: `{all_responses}`"
 
     try:
@@ -233,7 +253,7 @@ def files():
         pull_request = repo.get_pull(int(args.github_pr_id))
 
         combined_feedback = (
-                f"## GPT3.5 Engineering Feedback:\n\n" + "\n".join(engineering_feedback) + "\n\n"
+                f"## GPT Engineering Feedback:\n\n" + "\n".join(engineering_feedback) + "\n\n"
                 f"## Executive Review:\n\n{gpt_response}"
         )
         pull_request.create_issue_comment(combined_feedback)
