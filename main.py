@@ -17,7 +17,7 @@ parser.add_argument('--openai_engine', default="gpt-3.5-turbo",
                     help='Chat model to use. Options: any of the chat models')
 parser.add_argument('--openai_temperature', default=0.5,
                     help='Sampling temperature to use. Higher values means the model will take more risks. Recommended: 0.5')
-parser.add_argument('--openai_max_tokens', default=2048,
+parser.add_argument('--openai_max_tokens', default=512,
                     help='The maximum number of tokens to generate in the completion.')
 args = parser.parse_args()
 
@@ -185,10 +185,6 @@ def files():
             user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{gpt_engineer_feedback}\n " \
                            f"Changes were made, BE MORE concise than the last time. Were the comments addressed?  {user_message}"
 
-            # Set max_tokens based on the review_count
-        max_tokens = args.openai_max_tokens if review_count == 0 else max(50,
-                                                                          int(args.openai_max_tokens) // review_count)
-
         # Sending the diff and context (if applicable) to ChatGPT
         try:
             response = openai.ChatCompletion.create(
@@ -198,7 +194,7 @@ def files():
                     {"role": "user", "content": user_message}
                 ],
                 temperature=float(args.openai_temperature),
-                max_tokens=int(max_tokens)
+                max_tokens=int(args.openai_max_tokens / 2)
             )
             print(f"Received response from ChatGPT for file: {filename}")
             gpt_response = response.choices[0].message.content
