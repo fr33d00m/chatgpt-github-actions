@@ -63,14 +63,6 @@ def get_human_comments_since_last_review(pr_comments, filename, bot_username, la
 
     return human_comments
 
-def filter_lgtm_messages(messages):
-    filtered_messages = []
-    for message in messages:
-        if message != "LGTM" and message != "LGTM.":
-            filtered_messages.append(message)
-    return filtered_messages
-
-
 def find_previous_review_comment(pr_comments, filename, bot_username, search_for_exec_review=False):
     previous_comment = None
     previous_comment_timestamp = None
@@ -207,7 +199,7 @@ def files():
             gpt_response = response.choices[0].message.content
             gpt_responses.append(gpt_response)
 
-            if gpt_response.strip() != "LGTM" or gpt_response.strip() != "LGTM.":
+            if gpt_response.strip() != "LGTM" and gpt_response.strip() != "LGTM.":
                 engineering_feedback.append(f"### `{filename}`:\n"
                                             f"{gpt_response}\n\n")
 
