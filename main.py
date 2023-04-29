@@ -146,14 +146,19 @@ def files():
         # Get relevant context from the original content if the file size is below the threshold
         if len(content_pr) < file_size_threshold:
             print(f"Sending context and diff for file: {filename}")
-            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good ONLY write LGTM. " \
-                           f"Don't write LGTM if there are important insights or suggestions. Avoid outputing code - keep it brief if you do. " \
-                           f"Review this code patch and suggest improvements and issues:\n\nLatest file Context:\n```{content_pr}```\n\nDiff from main:\n```{diff}```"
+            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good write LGTM in the message. " \
+                           f"Don't START the review with LGTM if you have insights or potential issues to share." \
+                           f"The message you write when starting with LGTM will only be used in summary and not directly displayed to the programmer." \
+                           f"Keep any code you write to a minimum." \
+                           f"Review this code patch and suggest improvements and raise potential issues:\n\nLatest file Context:\n```{content_pr}```\n\nDiff from main:\n```{diff}```"
         else:
             print(f"Sending diff only for file: {filename}")
-            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good ONLY write LGTM." \
-                           f" Don't write LGTM if there are important insights or suggestions. Avoid outputing code - keep it brief if you do. " \
-                           f"Review this code patch and suggest improvements and issues:\n\nDiff:\n```{diff}```"
+            user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good write LGTM in the message. " \
+                           f"Don't START the review with LGTM if you have insights or potential issues to share. " \
+                           f"If your response starts with LGTM, summarize the change in 1-2 sentances." \
+                           f"The message you write when starting with LGTM will only be used in summary and not directly displayed to the programmer." \
+                           f"Keep any code you write to a minimum." \
+                           f"Review this code patch and suggest improvements and and raise potential issues:\n\nDiff:\n```{diff}```"
 
         previous_comment, review_count, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename,
                                                                                                   bot_username)
@@ -167,7 +172,7 @@ def files():
                                                               previous_comment_timestamp)
         if human_comments:
             human_comments_str = "\n".join(human_comments)
-            user_message = f"{user_message}\n\n. Additionally these are human comments on the code:\n\n{human_comments_str}"
+            user_message = f"{user_message}\n\n. Additionally, these are human reviewer comments on the pull request - are they addresed? \n\n{human_comments_str}"
 
         # Check if the file hasn't been changed since the last review
         if previous_comment_timestamp and last_commit_timestamp <= previous_comment_timestamp:
@@ -181,7 +186,7 @@ def files():
                            f"Changes were made, BE MORE concise than the last time. Were the comments addressed?  {user_message}"
 
             # Set max_tokens based on the review_count
-        max_tokens = args.openai_max_tokens if review_count == 0 else max(30,
+        max_tokens = args.openai_max_tokens if review_count == 0 else max(50,
                                                                           int(args.openai_max_tokens) // review_count)
 
         # Sending the diff and context (if applicable) to ChatGPT
@@ -189,7 +194,7 @@ def files():
             response = openai.ChatCompletion.create(
                 model=args.openai_engine,
                 messages=[
-                    {"role": "system", "content": "You are a senior developer/architect and a helpful assistant."},
+                    {"role": "system", "content": "You are a senior developer & architect and a helpful assistant."},
                     {"role": "user", "content": user_message}
                 ],
                 temperature=float(args.openai_temperature),
@@ -199,7 +204,7 @@ def files():
             gpt_response = response.choices[0].message.content
             gpt_responses.append(gpt_response)
 
-            if gpt_response.strip() != "LGTM" and gpt_response.strip() != "LGTM.":
+            if not gpt_response.strip().startswith("LGTM"):
                 engineering_feedback.append(f"### `{filename}`:\n"
                                             f"{gpt_response}\n\n")
 
@@ -214,18 +219,20 @@ def files():
 
     previous_exec_feedback, _, _ = find_previous_review_comment(pr_comments, "Executive Review", bot_username, True)
     if previous_exec_feedback:
-        user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval." \
+        user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval. " \
                        f"Don't just repeat verbotim what your senior devs said." \
                        f"Review like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit." \
-                       f"Don't mention your name so much. \n" \
+                       f"You don't need to introduce yourself. \n" \
                        f"Last time, you summarized the feedback like this:\n\n{previous_exec_feedback}\n\n" \
                        f"This time, your team of senior developers reviewed the current PR, " \
                        f"and these are THEIR comments on each file changed: `{all_responses}`"
     else:
-        user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval" \
+        user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval. " \
                        f"Don't just repeat verbotim what your senior devs said." \
                        f"Review like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit. " \
-                       f"Don't mention your name so much. Your team of senior developers reviewed the current PR, these are THEIR comments on each file changed: `{all_responses}`"
+                       f"You don't need to introduce yourself. " \
+                       f"Your team of senior developers reviewed the current PR, " \
+                       f"these are THEIR comments on each file changed: `{all_responses}`"
 
     try:
         response = openai.ChatCompletion.create(
