@@ -216,7 +216,8 @@ def files():
     if previous_exec_feedback:
         user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval." \
                        f"Don't just repeat verbotim what your senior devs said." \
-                       f"Review like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit.\n" \
+                       f"Review like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit." \
+                       f"Don't mention your name so much. \n" \
                        f"Last time, you summarized the feedback like this:\n\n{previous_exec_feedback}\n\n" \
                        f"This time, your team of senior developers reviewed the current PR, " \
                        f"and these are THEIR comments on each file changed: `{all_responses}`"
@@ -224,7 +225,7 @@ def files():
         user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval" \
                        f"Don't just repeat verbotim what your senior devs said." \
                        f"Review like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit. " \
-                       f"Your team of senior developers reviewed the current PR, these are THEIR comments on each file changed: `{all_responses}`"
+                       f"Don't mention your name so much. Your team of senior developers reviewed the current PR, these are THEIR comments on each file changed: `{all_responses}`"
 
     try:
         response = openai.ChatCompletion.create(
