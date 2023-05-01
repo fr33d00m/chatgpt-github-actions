@@ -150,7 +150,7 @@ def main():
         gpt_responses.append(f"### `{filename}`:\n"
                                     f"{gpt_response}\n\n")
 
-    print("Total Response count: " + len(gpt_responses))
+    print("Total Response count: " + str(len(gpt_responses)))
     all_responses = '\n'.join(gpt_responses)
 
     tokens = count_tokens(all_responses)
