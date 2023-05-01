@@ -203,7 +203,6 @@ def main():
         print(f"Error on GPT PR summary: {e}")
 
 
-
 def process_file(filename, file_info, repo, pr_comments, bot_username):
     sha = file_info['sha']
     diff = file_info['patch']
@@ -221,7 +220,7 @@ def process_file(filename, file_info, repo, pr_comments, bot_username):
         print(f"No changes found in file: {filename}, skipping.")
         return None
 
-    previous_comment, review_count, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename, )
+    previous_comment, review_count, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename, bot_username)
 
     last_commit = repo.get_commit(sha)
     last_commit_timestamp = last_commit.commit.committer.date
@@ -287,7 +286,8 @@ def get_human_comments_since_last_review(pr_comments, filename, bot_username, la
     human_comments = []
 
     for comment in pr_comments:
-        if comment.user.login != bot_username and comment.path == filename and comment.created_at > last_review_timestamp:
+        if comment.user.login != bot_username \
+                and comment.path == filename and comment.created_at > last_review_timestamp:
             human_comments.append(f"{comment.user.login} (line {comment.position}): {comment.body}")
 
     return human_comments
