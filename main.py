@@ -129,6 +129,8 @@ def main():
 
         # Recount the tokens
         total_input_tokens = count_tokens(single_user_message)
+        print(f"Optimized token count: ({total_input_tokens})")
+
         if total_input_tokens > MAX_INPUT_TOKENS:
             print(f"!!!WARNING!!!: Too many tokens ({total_input_tokens}) to process, skipping review.")
             return
@@ -151,10 +153,20 @@ def main():
 
     all_responses = '\n'.join(gpt_responses)
 
-    if count_tokens(all_responses > MAX_INPUT_SUMMARY_TOKENS):
+    if count_tokens(all_responses) > MAX_INPUT_SUMMARY_TOKENS:
         all_responses = '\n'.join(engineering_feedback)
 
-        if count_tokens(all_responses) > MAX_INPUT_SUMMARY_TOKENS:
+        tokens = count_tokens(all_responses)
+        if tokens > MAX_INPUT_SUMMARY_TOKENS:
+            print(f"Response too big ({tokens}) from ChatGPT.")
+            g = Github(args.github_summary_token)
+            repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
+            pull_request = repo.get_pull(int(args.github_pr_id))
+
+            combined_feedback = (
+                    f"## GPT Engineering Feedback:\n\n" + "\n".join(all_responses) + "\n\n"
+            )
+            pull_request.create_issue_comment(combined_feedback)
             return
 
     previous_exec_feedback, _, _ = find_previous_review_comment(pr_comments, "Executive Review", bot_username, True)
