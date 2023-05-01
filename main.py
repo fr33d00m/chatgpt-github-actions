@@ -234,23 +234,22 @@ def process_file(filename, file_info, repo, pr_comments, bot_username):
     return file_data
 
 
-def prepare_user_message(content_pr, diff, filename, previous_comment,
-                         human_comments):
+def prepare_user_message(file_data):
     user_message = f"No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good write LGTM in the message. " \
                        f"Don't START the review with LGTM if you have insights or potential issues to share." \
                        f"The message you write when starting with LGTM will only be used in summary and not directly displayed to the programmer." \
                        f"Keep any code you write to a minimum." \
-                       f"Review this code patch and suggest improvements and raise potential issues:\n\nLatest file Context:\n```{content_pr}```\n\nDiff from main:\n```{diff}```"
+                       f"Review this code patch and suggest improvements and raise potential issues:\n\nLatest file Context:\n```{file_data.content_pr}```\n\nDiff from main:\n```{file_data.diff}```"
 
-    return append_previous_reviews(filename, human_comments, previous_comment, user_message)
+    return append_previous_reviews(file_data, user_message)
 
 
-def append_previous_reviews(filename, human_comments, previous_comment, user_message):
-    if human_comments:
-        human_comments_str = "\n".join(human_comments)
+def append_previous_reviews(file_data, user_message):
+    if file_data.human_comments:
+        human_comments_str = "\n".join(file_data.human_comments)
         user_message = f"{user_message}\n\n. Additionally, these are human reviewer comments on the pull request - are they addresed? \n\n{human_comments_str}"
-    if previous_comment:
-        gpt_engineer_feedback = previous_comment.split(f"### `{filename}`:")[-1].split("### ")[0].strip()
+    if file_data.previous_comment:
+        gpt_engineer_feedback = file_data.previous_comment.split(f"### `{file_data.filename}`:")[-1].split("### ")[0].strip()
         user_message = f"You previously reviewed this code patch and suggested improvements and issues:\n\n{gpt_engineer_feedback}\n " \
                        f"Changes were made, BE MORE concise than the last time. Were the comments addressed?  {user_message}"
     return user_message
