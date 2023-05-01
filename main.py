@@ -10,6 +10,12 @@ import tiktoken
 from github import Github
 
 # Adding command-line arguments
+# Max input tokens can the PR reviewers process
+# PR review is not made if there are more.
+MAX_INPUT_TOKENS = 3800
+# How many input tokens can the executive reviewer process
+MAX_INPUT_SUMMARY_TOKENS = 1000
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--openai_api_key', help='Your OpenAI API Key')
 parser.add_argument('--github_token', help='Your Github Token')
@@ -55,6 +61,7 @@ text_file_extensions = [
     '.zlogout', '.zshrc', '.gitconfig', '.gitignore', '.dockerignore', '.hgignore',
     '.cvsignore', '.svnignore', '.bzrignore', '.sol',
 ]
+
 
 def main():
     # Authenticating with the Github API
@@ -105,7 +112,7 @@ def main():
 
         input_prompts.append((filename, user_message))
 
-    if total_input_tokens > 3000:
+    if total_input_tokens > MAX_INPUT_TOKENS:
         print("### Large amount of content detected: Reviewing Only Diff")
         single_user_message = "No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good write LGTM in the message. " \
                               "Don't START the review with LGTM if you have insights or potential issues to share. " \
@@ -121,8 +128,9 @@ def main():
         input_prompts = [("### Large amount of content detected: Diff Review", single_user_message)]
 
         # Recount the tokens
-        if count_tokens(single_user_message) > 6000:
-            print("!!!WARNING!!!: Too many tokens to process, skipping review.")
+        total_input_tokens = count_tokens(single_user_message)
+        if total_input_tokens > MAX_INPUT_TOKENS:
+            print(f"!!!WARNING!!!: Too many tokens ({total_input_tokens}) to process, skipping review.")
             return
 
     # Second loop: Process the prepared messages with ChatGPT
@@ -143,10 +151,10 @@ def main():
 
     all_responses = '\n'.join(gpt_responses)
 
-    if count_tokens(all_responses > 1000):
+    if count_tokens(all_responses > MAX_INPUT_SUMMARY_TOKENS):
         all_responses = '\n'.join(engineering_feedback)
 
-        if count_tokens(all_responses) > 1000:
+        if count_tokens(all_responses) > MAX_INPUT_SUMMARY_TOKENS:
             return
 
     previous_exec_feedback, _, _ = find_previous_review_comment(pr_comments, "Executive Review", bot_username, True)
