@@ -158,7 +158,7 @@ def main():
 
         tokens = count_tokens(all_responses)
         if tokens > MAX_INPUT_SUMMARY_TOKENS:
-            print(f"Response too big ({tokens}) from ChatGPT.")
+            print(f"Response too big ({tokens}) from ChatGPT. Skipping exec review")
             g = Github(args.github_summary_token)
             repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
             pull_request = repo.get_pull(int(args.github_pr_id))
