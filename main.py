@@ -151,6 +151,11 @@ def main():
                                     f"{gpt_response}\n\n")
 
     print("Total Response count: " + str(len(gpt_responses)))
+
+    if len(gpt_responses) == 0:
+        print("No responses to process, exiting.")
+        return
+
     all_responses = '\n'.join(gpt_responses)
 
     tokens = count_tokens(all_responses)
