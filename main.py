@@ -203,7 +203,7 @@ def main():
         pull_request = repo.get_pull(int(args.github_pr_id))
 
         combined_feedback = (
-                f"## GPT Engineering Feedback:\n\n" + "\n".join(engineering_feedback) + "\n\n"
+                f"## GPT Engineering Feedback:\n\n" + "\n".join(all_responses) + "\n\n"
                 f"## Executive Review:\n\n{gpt_response}"
         )
         pull_request.create_issue_comment(combined_feedback)
