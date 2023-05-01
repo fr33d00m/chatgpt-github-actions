@@ -135,7 +135,7 @@ def main():
 
     # Second loop: Process the prepared messages with ChatGPT
     for filename, user_message in input_prompts:
-        gpt_response = engineering_gpt(user_message, args)
+        gpt_response = engineering_gpt(user_message)
 
         if gpt_response is None:
             continue
@@ -261,11 +261,11 @@ def prepare_single_review_all_files(diff, filename):
     return user_message
 
 
-def engineering_gpt(user_message, engine):
+def engineering_gpt(user_message):
     try:
         print(f"User message: {user_message}")
         response = openai.ChatCompletion.create(
-            model=engine,
+            model=args.openai_engine,
             messages=[
                 {"role": "system", "content": "You are a senior developer & architect and a helpful assistant."},
                 {"role": "user", "content": user_message}
