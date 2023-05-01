@@ -23,8 +23,6 @@ parser.add_argument('--openai_max_tokens', default=512,
                     help='The maximum number of tokens to generate in the completion.')
 args = parser.parse_args()
 
-max_file_tokens = 500;
-
 if not args.github_summary_token:
     args.github_summary_token = args.github_token
 
