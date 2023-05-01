@@ -150,6 +150,7 @@ def main():
         gpt_responses.append(f"### `{filename}`:\n"
                                     f"{gpt_response}\n\n")
 
+    print("Total Response count: " + len(gpt_responses))
     all_responses = '\n'.join(gpt_responses)
 
     tokens = count_tokens(all_responses)
@@ -204,7 +205,7 @@ def main():
         pull_request = repo.get_pull(int(args.github_pr_id))
 
         combined_feedback = (
-                f"## GPT Engineering Feedback:\n\n" + "\n".join(all_responses) + "\n\n"
+                f"## GPT Engineering Feedback:\n\n" + all_responses + "\n\n"
                 f"## Executive Review:\n\n{gpt_response}"
         )
         pull_request.create_issue_comment(combined_feedback)
