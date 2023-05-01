@@ -78,7 +78,6 @@ def main():
     pull_request = repo.get_pull(int(args.github_pr_id))
     pr_comments = pull_request.get_issue_comments()
 
-    engineering_feedback = []
     gpt_responses = []
     last_commit_shas = {}
     commits = pull_request.get_commits()
@@ -151,38 +150,27 @@ def main():
         gpt_responses.append(f"### `{filename}`:\n"
                                     f"{gpt_response}\n\n")
 
-        if gpt_response.strip().startswith("LGTM"):
-            continue
-
-        engineering_feedback.append(f"### `{filename}`:\n"
-                                    f"{gpt_response}\n\n")
-
     all_responses = '\n'.join(gpt_responses)
 
     tokens = count_tokens(all_responses)
     if ((tokens > MAX_INPUT_SUMMARY_TOKENS * 2 and args.openai_engine == 'gpt-4')
             or (tokens > MAX_INPUT_SUMMARY_TOKENS and args.openai_engine != 'gpt-4')):
-        all_responses = '\n'.join(engineering_feedback)
 
-        tokens = count_tokens(all_responses)
-        if ((tokens > MAX_INPUT_SUMMARY_TOKENS * 2 and args.openai_engine == 'gpt-4')
-                or (tokens > MAX_INPUT_SUMMARY_TOKENS and args.openai_engine != 'gpt-4')):
+        print(f"Response too big ({tokens}) from ChatGPT. Skipping exec review")
+        g = Github(args.github_summary_token)
+        repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
+        pull_request = repo.get_pull(int(args.github_pr_id))
 
-            print(f"Response too big ({tokens}) from ChatGPT. Skipping exec review")
-            g = Github(args.github_summary_token)
-            repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
-            pull_request = repo.get_pull(int(args.github_pr_id))
+        combined_feedback = (
+                f"## GPT Engineering Feedback:\n\n" + "\n".join(all_responses) + "\n\n"
+        )
+        pull_request.create_issue_comment(combined_feedback)
+        return
 
-            combined_feedback = (
-                    f"## GPT Engineering Feedback:\n\n" + "\n".join(all_responses) + "\n\n"
-            )
-            pull_request.create_issue_comment(combined_feedback)
-            return
-
-    previous_exec_feedback, _, _ = find_previous_review_comment(pr_comments, "Executive Review", bot_username, True)
+    previous_exec_feedback, _ = find_previous_review_comment(pr_comments, "Executive Review", bot_username, True)
     if previous_exec_feedback:
         user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval. " \
-                       f"Don't just repeat verbotim what your senior devs said." \
+                       f"Don't just repeat verbotim what your senior devs said. When referencing files, don't write full file paths - just the name." \
                        f"Review like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit." \
                        f"You don't need to introduce yourself. \n" \
                        f"Last time, you summarized the feedback like this:\n\n{previous_exec_feedback}\n\n" \
@@ -190,7 +178,7 @@ def main():
                        f"and these are THEIR comments on each file changed: `{all_responses}`"
     else:
         user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval. " \
-                       f"Don't just repeat verbotim what your senior devs said." \
+                       f"Don't just repeat verbotim what your senior devs said. When referencing files, don't write full file paths - just the name" \
                        f"Review like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit. " \
                        f"You don't need to introduce yourself. " \
                        f"Your team of senior developers reviewed the current PR, " \
@@ -242,7 +230,7 @@ def process_file(filename, file_info, repo, pr_comments, bot_username):
         print(f"No changes found in file: {filename}, skipping.")
         return None
 
-    previous_comment, review_count, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename, bot_username)
+    previous_comment, previous_comment_timestamp = find_previous_review_comment(pr_comments, filename, bot_username)
 
     last_commit = repo.get_commit(sha)
     last_commit_timestamp = last_commit.commit.committer.date
@@ -315,7 +303,6 @@ def get_human_comments_since_last_review(pr_comments, filename, bot_username, la
 def find_previous_review_comment(pr_comments, filename, bot_username, search_for_exec_review=False):
     previous_comment = None
     previous_comment_timestamp = None
-    count = 0
 
     # Sort the comments by their creation time
     sorted_pr_comments = sorted(pr_comments, key=lambda comment: comment.created_at)
@@ -325,11 +312,13 @@ def find_previous_review_comment(pr_comments, filename, bot_username, search_for
             if search_for_exec_review:
                 if "Executive Review" in comment.body:
                     previous_comment = comment.body.split("Executive Review:")[-1].strip()
+                    previous_comment_timestamp = comment.created_at
             else:
                 if f"`{filename}`" in comment.body:
                     previous_comment = comment.body
+                    previous_comment_timestamp = comment.created_at
 
-    return previous_comment, count, previous_comment_timestamp
+    return previous_comment, previous_comment_timestamp
 
 
 def count_tokens(text):
