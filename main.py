@@ -263,7 +263,6 @@ def prepare_single_review_all_files(diff, filename):
 
 def engineering_gpt(user_message):
     try:
-        print(f"User message: {user_message}")
         response = openai.ChatCompletion.create(
             model=args.openai_engine,
             messages=[
