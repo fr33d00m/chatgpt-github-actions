@@ -113,7 +113,7 @@ def main():
         input_prompts.append((filename, user_message))
 
     if total_input_tokens > MAX_INPUT_TOKENS:
-        print("### Large amount of content detected: Reviewing Only Diff")
+        print("### Large amount of tokens detected ({total_input_tokens}): Reviewing Only Diff")
         single_user_message = "No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good write LGTM in the message. " \
                               "Don't START the review with LGTM if you have insights or potential issues to share. " \
                               "If your response starts with LGTM, summarize the change in 1-2 sentances." \
