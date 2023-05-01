@@ -169,6 +169,7 @@ def main():
 
     previous_exec_feedback, _ = find_previous_review_comment(pr_comments, "Executive Review", bot_username, True)
     if previous_exec_feedback:
+        print(f"Including previous exec response.")
         user_message = f"Summarize in an Executive Review the following Pull Request feedback and give your overall approval. " \
                        f"Don't just repeat verbotim what your senior devs said. When referencing files, don't write full file paths - just the name." \
                        f"Review like you were Joe Rogan, use emoticons where applicable. On really bad PRs, Joe goes ape shit." \
