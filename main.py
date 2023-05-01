@@ -324,12 +324,13 @@ def count_tokens(text):
 
 
 class FileData:
-    def __init__(self, content_pr, diff, filename, previous_comment, human_comments):
+    def __init__(self, content_pr, diff, filename, previous_comment,previous_comment_timestamp, human_comments):
         self.content_pr = content_pr
         self.diff = diff
         self.filename = filename
         self.previous_comment = previous_comment
         self.human_comments = human_comments
+        self.previous_comment_timestamp = previous_comment_timestamp
 
 
 main()
