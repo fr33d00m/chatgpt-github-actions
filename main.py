@@ -144,11 +144,11 @@ def main():
             continue
 
         if per_file_prompt is None:
-            gpt_response.append(gpt_response)
+            gpt_responses.append(gpt_response)
             continue
 
         print(f"Received response from ChatGPT for file: {filename}")
-        gpt_response.append(f"### `{filename}`:\n"
+        gpt_responses.append(f"### `{filename}`:\n"
                                     f"{gpt_response}\n\n")
 
         if gpt_response.strip().startswith("LGTM"):
@@ -228,7 +228,7 @@ def main():
 def process_file(filename, file_info, repo, pr_comments, bot_username):
     sha = file_info['sha']
     diff = file_info['patch']
-    print(f"Processing file: {filename}")
+    print(f"Pre-Processing file: {filename}")
 
     file_extension = os.path.splitext(filename)[1]
     if file_extension not in text_file_extensions:
