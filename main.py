@@ -271,7 +271,7 @@ def engineering_gpt(user_message, engine):
                 {"role": "user", "content": user_message}
             ],
             temperature=float(args.openai_temperature),
-            max_tokens=int(args.openai_max_tokens) / 2)
+            max_tokens=int(args.openai_max_tokens) / 2
         )
         gpt_response = response.choices[0].message.content
         return gpt_response
