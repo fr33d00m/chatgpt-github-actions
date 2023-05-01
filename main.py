@@ -110,9 +110,10 @@ def main():
         user_message_tokens = count_tokens(user_message)
         total_input_tokens += user_message_tokens
 
-        input_prompts.append((filename, user_message))
+        input_prompts.append((filename, user_message, file_data))
 
-    if total_input_tokens > MAX_INPUT_TOKENS:
+    if ((total_input_tokens > MAX_INPUT_TOKENS * 2 and args.openai_engine == 'gpt-4')
+       or (total_input_tokens > MAX_INPUT_TOKENS and args.openai_engine != 'gpt-4')):
         print(f"!!! Large amount of tokens detected ({total_input_tokens}): Reviewing Only Diff")
         single_user_message = "No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good write LGTM in the message. " \
                               "Don't START the review with LGTM if you have insights or potential issues to share. " \
@@ -120,30 +121,35 @@ def main():
                               "Keep any code you write to a minimum." \
                               "This is the list of files and changes below them, no need to give an overall review. Review each file in order:"
 
-        for filename, file_info in last_commit_shas.items():
-            diff = file_info['patch']
-            single_user_message_part = prepare_single_review_all_files(diff, filename)
+        for file_name, user_message, file_data in input_prompts:
+            single_user_message_part = prepare_single_review_all_files(file_data.diff, filename)
             single_user_message += f"\n\n{single_user_message_part}"
 
-        input_prompts = [("### Large amount of content detected: Diff Review", single_user_message)]
+        input_prompts = [("> **Warning** Large amount of content detected: Diff Review", single_user_message, None)]
 
         # Recount the tokens
         total_input_tokens = count_tokens(single_user_message)
         print(f"Optimized token count: ({total_input_tokens})")
 
-        if total_input_tokens > MAX_INPUT_TOKENS:
+        if ((total_input_tokens > MAX_INPUT_TOKENS * 2 and args.openai_engine == 'gpt-4')
+                or (total_input_tokens > MAX_INPUT_TOKENS and args.openai_engine != 'gpt-4')):
             print(f"!!!WARNING!!!: Too many tokens ({total_input_tokens}) to process, skipping review.")
             return
 
     # Second loop: Process the prepared messages with ChatGPT
-    for filename, user_message in input_prompts:
+    for filename, user_message, per_file_prompt in input_prompts:
         gpt_response = engineering_gpt(user_message)
 
         if gpt_response is None:
             continue
 
+        if per_file_prompt is None:
+            gpt_response.append(gpt_response)
+            continue
+
         print(f"Received response from ChatGPT for file: {filename}")
-        gpt_responses.append(gpt_response)
+        gpt_response.append(f"### `{filename}`:\n"
+                                    f"{gpt_response}\n\n")
 
         if gpt_response.strip().startswith("LGTM"):
             continue
@@ -153,11 +159,15 @@ def main():
 
     all_responses = '\n'.join(gpt_responses)
 
-    if count_tokens(all_responses) > MAX_INPUT_SUMMARY_TOKENS:
+    tokens = count_tokens(all_responses)
+    if ((tokens > MAX_INPUT_SUMMARY_TOKENS * 2 and args.openai_engine == 'gpt-4')
+            or (tokens > MAX_INPUT_SUMMARY_TOKENS and args.openai_engine != 'gpt-4')):
         all_responses = '\n'.join(engineering_feedback)
 
         tokens = count_tokens(all_responses)
-        if tokens > MAX_INPUT_SUMMARY_TOKENS:
+        if ((tokens > MAX_INPUT_SUMMARY_TOKENS * 2 and args.openai_engine == 'gpt-4')
+                or (tokens > MAX_INPUT_SUMMARY_TOKENS and args.openai_engine != 'gpt-4')):
+
             print(f"Response too big ({tokens}) from ChatGPT. Skipping exec review")
             g = Github(args.github_summary_token)
             repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
