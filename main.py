@@ -270,7 +270,7 @@ def engineering_gpt(user_message):
                 {"role": "user", "content": user_message}
             ],
             temperature=float(args.openai_temperature),
-            max_tokens=int(args.openai_max_tokens) / 2
+            max_tokens=int(int(args.openai_max_tokens) / 2)
         )
         return response.choices[0].message.content
 
