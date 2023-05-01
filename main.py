@@ -113,7 +113,7 @@ def main():
         input_prompts.append((filename, user_message))
 
     if total_input_tokens > MAX_INPUT_TOKENS:
-        print("### Large amount of tokens detected ({total_input_tokens}): Reviewing Only Diff")
+        print(f"!!! Large amount of tokens detected ({total_input_tokens}): Reviewing Only Diff")
         single_user_message = "No wishy-washy shoulda-woulda-coulda, only actionable items. If the change is good write LGTM in the message. " \
                               "Don't START the review with LGTM if you have insights or potential issues to share. " \
                               "If your response starts with LGTM, summarize the change in 1-2 sentances." \
@@ -261,9 +261,9 @@ def prepare_single_review_all_files(diff, filename):
     return user_message
 
 
-
 def engineering_gpt(user_message, engine):
     try:
+        print(f"User message: {user_message}")
         response = openai.ChatCompletion.create(
             model=engine,
             messages=[
@@ -273,8 +273,7 @@ def engineering_gpt(user_message, engine):
             temperature=float(args.openai_temperature),
             max_tokens=int(args.openai_max_tokens) / 2
         )
-        gpt_response = response.choices[0].message.content
-        return gpt_response
+        return response.choices[0].message.content
 
     except Exception as e:
         print(f"Error on GPT: {e}")
