@@ -77,6 +77,7 @@ def main():
     repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
     pull_request = repo.get_pull(int(args.github_pr_id))
     pr_comments = pull_request.get_issue_comments()
+    human_comments = pull_request.get_review_comments()
 
     gpt_responses = []
     last_commit_shas = {}
@@ -100,7 +101,7 @@ def main():
     input_prompts = []
     total_input_tokens = 0
     for filename, file_info in last_commit_shas.items():
-        file_data = process_file(filename, file_info, repo, pr_comments, bot_username)
+        file_data = process_file(filename, file_info, repo, pr_comments, bot_username, human_comments)
 
         if file_data is None:
             continue
@@ -136,7 +137,7 @@ def main():
             return
 
     # Second loop: Process the prepared messages with ChatGPT
-    for filename, user_message in input_prompts:
+    for filename, user_message, file_data in input_prompts:
         gpt_response = engineering_gpt(user_message)
 
         if gpt_response is None:
@@ -221,7 +222,7 @@ def main():
         print(f"Error on GPT PR summary: {e}")
 
 
-def process_file(filename, file_info, repo, pr_comments, bot_username):
+def process_file(filename, file_info, repo, pr_comments, bot_username, pr_human_comments):
     sha = file_info['sha']
     diff = file_info['patch']
     print(f"Pre-Processing file: {filename}")
@@ -247,7 +248,7 @@ def process_file(filename, file_info, repo, pr_comments, bot_username):
         print(f"No updates found in file: {filename} since the last review, skipping.")
         return None
 
-    human_comments = get_human_comments_since_last_review(pr_comments, filename, bot_username, previous_comment_timestamp)
+    human_comments = get_human_comments_since_last_review(pr_human_comments, filename, bot_username, previous_comment_timestamp)
     file_data = FileData(content_pr, diff, filename, previous_comment, previous_comment_timestamp, human_comments)
     return file_data
 
@@ -297,10 +298,10 @@ def engineering_gpt(user_message):
         return None
 
 
-def get_human_comments_since_last_review(pr_comments, filename, bot_username, last_review_timestamp):
+def get_human_comments_since_last_review(review_comments, filename, bot_username, last_review_timestamp):
     human_comments = []
 
-    for comment in pr_comments:
+    for comment in review_comments:
         if comment.user.login != bot_username \
                 and comment.path == filename and comment.created_at > last_review_timestamp:
             human_comments.append(f"{comment.user.login} (line {comment.position}): {comment.body}")
