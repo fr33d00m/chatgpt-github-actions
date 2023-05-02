@@ -37,7 +37,7 @@ openai.api_key = args.openai_api_key
 
 text_file_extensions = [
     '.txt', '.md', '.rst', '.asciidoc',
-    '.json', '.xml', '.yaml', '.yml', '.toml', '.ini', '.cfg',
+    '.xml', '.yaml', '.yml', '.toml', '.ini', '.cfg',
     '.js', '.jsx', '.ts', '.tsx', '.coffee',
     '.py', '.pyw', '.pyx', '.pyo', '.pyc', '.pyd', '.pyi',
     '.c', '.h', '.cpp', '.hpp', '.cc', '.cxx', '.hh', '.hxx', '.h++',
