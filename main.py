@@ -14,7 +14,7 @@ from github import Github
 # PR review is not made if there are more.
 MAX_INPUT_TOKENS = 3800
 # How many input tokens can the executive reviewer process
-MAX_INPUT_SUMMARY_TOKENS = 1000
+MAX_INPUT_SUMMARY_TOKENS = 2000
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--openai_api_key', help='Your OpenAI API Key')
@@ -121,10 +121,10 @@ def main():
                               "This is the list of files and changes below them, no need to give an overall review. Review each file in order:"
 
         for file_name, user_message, file_data in input_prompts:
-            single_user_message_part = prepare_single_review_all_files(file_data.diff, filename)
+            single_user_message_part = prepare_single_review_all_files(file_data.diff, file_name)
             single_user_message += f"\n\n{single_user_message_part}"
 
-        input_prompts = [("> **Warning** Large amount of content detected: Diff Review", single_user_message, None)]
+        input_prompts = [(None, single_user_message, None)]
 
         # Recount the tokens
         total_input_tokens = count_tokens(single_user_message)
@@ -136,14 +136,15 @@ def main():
             return
 
     # Second loop: Process the prepared messages with ChatGPT
-    for filename, user_message, per_file_prompt in input_prompts:
+    for filename, user_message in input_prompts:
         gpt_response = engineering_gpt(user_message)
 
         if gpt_response is None:
             continue
 
-        if per_file_prompt is None:
-            gpt_responses.append(gpt_response)
+        if filename is None:
+            gpt_responses.append(f"> **Warning** Large amount of content detected: Diff only Review:\n\n"
+                                 f"{gpt_response}\n\n")
             continue
 
         print(f"Received response from ChatGPT for file: {filename}")
