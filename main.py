@@ -303,7 +303,8 @@ def get_human_comments_since_last_review(review_comments, filename, bot_username
 
     for comment in review_comments:
         if comment.user.login != bot_username \
-                and comment.path == filename and comment.created_at > last_review_timestamp:
+                and comment.path == filename and \
+                (last_review_timestamp is None or comment.created_at > last_review_timestamp):
             human_comments.append(f"{comment.user.login} (line {comment.position}): {comment.body}")
 
     return human_comments
